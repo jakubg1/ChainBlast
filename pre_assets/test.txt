@@ -1,0 +1,1 @@
+- If less than 30% of original time, favor spawning to make more matches
