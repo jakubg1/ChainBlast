@@ -1,0 +1,23 @@
+An arcade puzzle game inspired by Chainz with quite a few twists.
+Retro-styled, with vibrant colors and pixel art.
+Focus on the gameplay and visual effects, not so much on the story (there's none) or the background (maybe some white pixels will do).
+
+In the original Chainz game, you have a board similar to Candy Crush or billions of other similar games.
+Instead of gems or candies, you have pieces of chains which you have to connect to make matches.
+However, in the original, you have to rotate links separately, so if you have three in parallel, you have to click three times.
+In this game, I plan to make it instead so you can drag to make a match and the links will align and connect automatically.
+This also allows to create arbitrarily long matches.
+I'm not sure how the powerups will work yet.
+
+The game is aimed to be fast-paced, with a time limit.
+(secret: although the time limits are going to be quite challenging,
+    the game will "get easier" if you have little time left with quite a lot to do, such as rig the spawns to make it more enjoyable)
+To complete each level, you need to mark all the tiles, or in other words, make at least one match over every tile.
+To counter the boring factor, I plan to add some various obstacles in later levels.
+
+The demo will probably contain 10 levels.
+This design may change based on feedback during any part of the development.
+
+
+
+What will the game be called? I don't know!

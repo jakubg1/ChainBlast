@@ -1,1 +1,1 @@
-"C:/Program Files/LOVE/love.exe" ./ --console
+"C:/Program Files/LOVE-dev/love.exe" ./ --console
