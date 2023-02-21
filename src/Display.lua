@@ -40,13 +40,23 @@ end
 
 
 
-function Display:drawSprite(sprite, state, pos)
-    love.graphics.setColor(1, 1, 1)
+function Display:drawSprite(sprite, state, pos, color, alpha)
+    color = color or {1, 1, 1}
+    love.graphics.setColor(color[1], color[2], color[3], alpha)
     if state then
         love.graphics.draw(sprite:getTexture(), sprite:getState(state), pos.x, pos.y)
     else
         love.graphics.draw(sprite:getTexture(), pos.x, pos.y)
     end
+end
+
+
+
+function Display:drawText(text, x, y, font, color, alpha)
+    color = color or {1, 1, 1}
+    love.graphics.setColor(color[1], color[2], color[3], alpha)
+    love.graphics.setFont(font or _Game.FONTS.standard)
+    love.graphics.print(text, x, y)
 end
 
 

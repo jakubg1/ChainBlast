@@ -42,6 +42,7 @@ end
 
 function love.draw()
     _Game:draw()
+    love.graphics.setCanvas()
 end
 
 
