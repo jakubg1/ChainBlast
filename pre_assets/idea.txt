@@ -31,10 +31,21 @@ Day 1: ???
 Day 2: Board, chains and a bit of visual effects
 Day 3: Matching, scoring, chain connections, turning tiles gold and making a font work
 Day 4: Actual matches, rotating links when matching, rotation animations, cross links
+Day 5: Different board shapes, level intro/outro animations, HUD, timer, potentially code cleanup (well turns out not)
 --- WE'RE HERE
-Day 5: Different board shapes, level intro/outro animations, HUD, potentially code cleanup
 Day 6: Main menu, settings, savefile support
 Day 7: Game loop, time limits, win/lose conditions, lives, animations on start/end of a level
 Day 8: Multiple levels, some obstacles/special tiles
 Day 9: Perhaps the same as day 8, plus graphical effects (backgrounds, shakes, etc.)
 Day 10: QoL improvements, anything that haven't been done so far, aka spare day
+
+
+
+Ideas for special items:
+- Boxes which occupy a space until destroyed (one or more times)
+- Icy tiles which need to be broken before making them gold (one or more times)
+- Locked chains (chained chains? lmao)
+- Is that enough for 10 levels?
+
+Another idea:
+- A bar which fills when matching over gold tiles; when filled, it will explode a few non-gold tiles or obstacles if any

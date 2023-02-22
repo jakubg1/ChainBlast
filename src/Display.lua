@@ -32,10 +32,10 @@ end
 
 
 
-function Display:drawRect(pos, size, color, alpha)
+function Display:drawRect(pos, size, filled, color, alpha)
     color = color or {1, 1, 1}
     love.graphics.setColor(color[1], color[2], color[3], alpha)
-    love.graphics.rectangle("fill", pos.x, pos.y, size.x, size.y)
+    love.graphics.rectangle(filled and "fill" or "line", pos.x, pos.y, size.x, size.y)
 end
 
 
@@ -52,11 +52,17 @@ end
 
 
 
-function Display:drawText(text, x, y, font, color, alpha)
+function Display:drawText(text, pos, align, font, color, alpha)
     color = color or {1, 1, 1}
+    font = font or _Game.FONTS.standard
+
     love.graphics.setColor(color[1], color[2], color[3], alpha)
-    love.graphics.setFont(font or _Game.FONTS.standard)
-    love.graphics.print(text, x, y)
+    love.graphics.setFont(font)
+    if align then
+        local size = Vec2(font:getWidth(text), font:getHeight())
+        pos = pos - size * align
+    end
+    love.graphics.print(text, pos.x, pos.y)
 end
 
 

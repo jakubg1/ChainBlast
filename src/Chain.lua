@@ -29,20 +29,57 @@ function Chain:new(board, coords)
 
     self.fallTarget = nil
     self.fallSpeed = 0
+    self.fallDelay = nil
+    self.shuffleStart = nil
+    self.shuffleTarget = nil
+    self.shuffleTime = 0
+    self.releasePos = nil
+    self.releaseSpeed = nil
+    self.releaseTime = nil
 end
 
 
 
 function Chain:update(dt)
     if self.fallTarget then
-        self.fallSpeed = self.fallSpeed + 20 * dt
-        self.coords.y = self.coords.y + self.fallSpeed * dt
-        if self.coords.y >= self.fallTarget.y then
-            self.coords.y = self.fallTarget.y
-            self.fallTarget = nil
-            self.fallSpeed = 0
-            self.board.fallingObjectCount = self.board.fallingObjectCount - 1
+        if self.fallDelay then
+            self.fallDelay = self.fallDelay - dt
+            if self.fallDelay <= 0 then
+                self.fallDelay = nil
+            end
         end
+        if not self.fallDelay then
+            self.fallSpeed = self.fallSpeed + 20 * dt
+            self.coords.y = self.coords.y + self.fallSpeed * dt
+            if self.coords.y >= self.fallTarget.y then
+                self.coords.y = self.fallTarget.y
+                self.fallTarget = nil
+                self.fallSpeed = 0
+                self.board.fallingObjectCount = self.board.fallingObjectCount - 1
+            end
+        end
+    end
+
+    if self.shuffleTarget then
+        self.shuffleTime = self.shuffleTime + dt
+        local t = 0
+        if self.shuffleTime > 0 then
+            t = 1 - math.sin((1 - self.shuffleTime / 0.5) * (math.pi / 2))
+        end
+        self.coords = self.shuffleStart * (1 - t) + self.shuffleTarget * t
+        if self.shuffleTime >= 0.5 then
+            self.coords = self.shuffleTarget
+            self.shuffleStart = nil
+            self.shuffleTarget = nil
+            self.shuffleTime = 0
+            self.board.shufflingChainCount = self.board.shufflingChainCount - 1
+        end
+    end
+
+    if self.releaseSpeed then
+        self.releaseTime = self.releaseTime + dt
+        self.releaseSpeed = self.releaseSpeed + Vec2(0, self.releaseTime * 3.75)
+        self.releasePos = self.releasePos + self.releaseSpeed * dt
     end
 
     if self.rotationAnim then
@@ -56,6 +93,9 @@ end
 
 
 function Chain:getPos()
+    if self.releasePos then
+        return self.releasePos
+    end
     return self.board:getTilePos(self.coords)
 end
 
@@ -75,7 +115,7 @@ end
 
 
 function Chain:isConnected(direction)
-    if self.fallTarget or not self:hasConnection(direction) then
+    if self.fallTarget or self.shuffleTarget or self.releaseSpeed or not self:hasConnection(direction) then
         return false
     end
 
@@ -138,17 +178,39 @@ end
 
 
 
-function Chain:fallTo(coords)
+function Chain:fallTo(coords, delay)
+    if not self.fallTarget then
+        self.board.fallingObjectCount = self.board.fallingObjectCount + 1
+    end
     self.fallTarget = coords
+    self.fallDelay = delay
+end
+
+
+
+function Chain:shuffleTo(coords)
+    if not self.shuffleTarget then
+        self.board.shufflingChainCount = self.board.shufflingChainCount + 1
+    end
+    self.shuffleStart = self.coords
+    self.shuffleTarget = coords
+    self.shuffleTime = love.math.random() * -0.5
+end
+
+
+
+function Chain:release()
     self.board.fallingObjectCount = self.board.fallingObjectCount + 1
+    self.releasePos = self:getPos()
+    self.releaseSpeed = Vec2(love.math.random() * 75 - 37.5, love.math.random() * -37.5 - 75)
+    self.releaseTime = 0
 end
 
 
 
 function Chain:onDestroy()
-    local pos = self:getPos() + 7 + Vec2(love.math.randomNormal(2, 0), love.math.randomNormal(2, 0))
     for i = 1, 20 do
-        table.insert(_Game.sparks, Spark(pos))
+        table.insert(_Game.sparks, Spark(self:getPos() + 7 + Vec2(love.math.randomNormal(2, 0), love.math.randomNormal(2, 0))))
     end
     table.insert(_Game.explosions, Explosion(self:getPos() - Vec2(15)))
 end

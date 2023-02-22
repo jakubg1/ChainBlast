@@ -9,7 +9,9 @@ local Chain = require("src.Chain")
 
 
 
-function Board:new()
+function Board:new(level)
+    self.level = level
+
     self.SIZE = Vec2(9)
     self.DIRECTIONS = {
         Vec2(0, -1),
@@ -22,29 +24,7 @@ function Board:new()
     -- Each tile can be:
     --  - nil - no tile there;
     --  - Tile - tile there. Contents in a separate class.
-    self.tiles = {
-        {{}, {}, {}, {}, {}, {}, {}, {}, {}},
-        {{}, {}, {}, {}, {}, {}, {}, {}, {}},
-        {{}, {}, {}, {}, {}, {}, {}, {}, {}},
-        {{}, {}, {}, {}, {}, {}, {}, {}, {}},
-        {{}, {}, {}, {}, {}, {}, {}, {}, {}},
-        {{}, {}, {}, {}, {}, {}, {}, {}, {}},
-        {{}, {}, {}, {}, {}, {}, {}, {}, {}},
-        {{}, {}, {}, {}, {}, {}, {}, {}, {}},
-        {{}, {}, {}, {}, {}, {}, {}, {}, {}}
-    }
-
-    -- We will fill the board repeatedly until no premade matches exist.
-    repeat
-        for i = 1, 9 do
-            for j = 1, 9 do
-                local coords = Vec2(i, j)
-                local tile = Tile(self, coords:clone())
-                tile:setObject(Chain(self, coords:clone()))
-                self.tiles[i][j] = tile
-            end
-        end
-    until #self:getMatchGroups() == 0
+    self.tiles = {}
 
     self.playerControl = true
     self.hoverCoords = nil
@@ -55,25 +35,53 @@ function Board:new()
     self.selectingDirection = nil
 
     self.fallingObjectCount = 0
+    self.shufflingChainCount = 0
     self.rotatingChainCount = 0
+
+    self.startAnimation = 0
+    self.endAnimation = nil
+
+    self:fill()
 end
 
 
 function Board:update(dt)
+    -- Start animation
+    if self.startAnimation then
+        self.startAnimation = self.startAnimation + dt
+        if self.startAnimation >= 4 then
+            self.startAnimation = nil
+        end
+    end
+
+    -- End animation
+    if self.endAnimation then
+        self.endAnimation = self.endAnimation + dt
+        if self.endAnimation >= 4 then
+            self.endAnimation = nil
+            self.level:onBoardEnd()
+        end
+    end
+
     -- Game control
-    if self.fallingObjectCount > 0 then
+    if self.fallingObjectCount > 0 or self.shufflingChainCount > 0 then
         self.playerControl = false
     end
 
-    if not self.playerControl and self.fallingObjectCount == 0 and self.rotatingChainCount == 0 then
+    if not self.playerControl and self.fallingObjectCount == 0 and self.shufflingChainCount == 0 and self.rotatingChainCount == 0 then
         -- Do another shot.
         self:handleMatches()
         self:fillHoles()
         self:fillHolesUp()
-        if self.fallingObjectCount == 0 and self.rotatingChainCount == 0 then
+        if self.fallingObjectCount == 0 and self.shufflingChainCount == 0 and self.rotatingChainCount == 0 then
             -- Nothing happened, grant the control to the player.
-            self.playerControl = true
-            _Game.combo = 0
+            if self:isTargetReached() then
+                self:releaseChains()
+                self.level:win()
+            else
+                self.playerControl = true
+                self.level.combo = 0
+            end
         end
     end
 
@@ -136,6 +144,38 @@ end
 
 function Board:getTileCoords(pos)
     return ((pos - Vec2(44, -6)) / 15):floor()
+end
+
+
+
+function Board:fill()
+    -- We will fill the board repeatedly until no premade matches exist.
+    repeat
+        for i = 1, 9 do
+            self.tiles[i] = {}
+            for j = 1, 9 do
+                if i + j >= 7 and i + j <= 13 then
+                    local coords = Vec2(i, j)
+                    local tile = Tile(self, coords:clone(), (i + j) * 0.12)
+                    local chain = Chain(self, coords:clone())
+                    tile:setObject(chain)
+                    self.tiles[i][j] = tile
+                end
+            end
+        end
+    until #self:getMatchGroups() == 0
+
+    -- Move all the chains up and animate them accordingly.
+    for i = 1, 9 do
+        for j = 1, 9 do
+            local coords = Vec2(i, j)
+            local chain = self:getTile(coords) and self:getTile(coords):getChain()
+            if chain then
+                chain.coords = coords - Vec2(0, 10)
+                chain:fallTo(coords, 2.5 + (i - 1) * 0.1)
+            end
+        end
+    end
 end
 
 
@@ -213,8 +253,13 @@ function Board:finishSelection()
     for i = 1, self.SIZE.x do
         for j = 1, self.SIZE.y do
             local coords = Vec2(i, j)
-            local chain = self:getTile(coords):getChain()
-            chain:unrotate()
+            local tile = self:getTile(coords)
+            if tile then
+                local chain = tile:getChain()
+                if chain then
+                    chain:unrotate()
+                end
+            end
         end
     end
 end
@@ -230,27 +275,30 @@ function Board:getMatchGroups()
     for i = 1, self.SIZE.x do
         for j = 1, self.SIZE.y do
             local coords = Vec2(i, j)
-            local chain = self:getTile(coords):getChain()
-            if chain then
-                local group = chain:getGroup()
-                -- If the group has at least three pieces, start storing.
-                if #group >= 3 then
-                    local duplicate = false
-                    -- 2 in 1: check for duplicates, and add the coordinates to the list so they can't be used up later.
-                    for k, currentCoords in ipairs(group) do
-                        for l, oldCoords in ipairs(excludedCoords) do
-                            if currentCoords == oldCoords then
-                                duplicate = true
+            local tile = self:getTile(coords)
+            if tile then
+                local chain = tile:getChain()
+                if chain then
+                    local group = chain:getGroup()
+                    -- If the group has at least three pieces, start storing.
+                    if #group >= 3 then
+                        local duplicate = false
+                        -- 2 in 1: check for duplicates, and add the coordinates to the list so they can't be used up later.
+                        for k, currentCoords in ipairs(group) do
+                            for l, oldCoords in ipairs(excludedCoords) do
+                                if currentCoords == oldCoords then
+                                    duplicate = true
+                                    break
+                                end
+                            end
+                            if duplicate then
                                 break
                             end
+                            table.insert(excludedCoords, currentCoords)
                         end
-                        if duplicate then
-                            break
+                        if not duplicate then
+                            table.insert(groups, group)
                         end
-                        table.insert(excludedCoords, currentCoords)
-                    end
-                    if not duplicate then
-                        table.insert(groups, group)
                     end
                 end
             end
@@ -270,9 +318,13 @@ function Board:handleMatches()
             tile:destroyObject()
             tile:makeGold()
         end
-        _Game.combo = _Game.combo + 1
-        local multiplier = (_Game.combo * (_Game.combo + 1)) / 2
-        _Game:addScore((#match - 2) * 100 * multiplier)
+        self.level:addCombo()
+        local multiplier = (self.level.combo * (self.level.combo + 1)) / 2
+        self.level:addScore((#match - 2) * 100 * multiplier)
+        if #match > 3 then
+            self.level:addTime((#match - 3) * 3)
+        end
+        self.level.largestGroup = math.max(self.level.largestGroup, #match)
     end
 end
 
@@ -320,17 +372,117 @@ end
 
 
 
+function Board:shuffle()
+    local coordsList = {}
+    local chains = {}
+
+    for i = 1, self.SIZE.x do
+        for j = 1, self.SIZE.y do
+            local coords = Vec2(i, j)
+            local tile = self:getTile(coords)
+            if tile then
+                local chain = tile:getChain()
+                if chain then
+                    table.insert(coordsList, coords)
+                    table.insert(chains, chain)
+                end
+            end
+        end
+    end
+
+    local shuffledCoords = {}
+    for i, coords in ipairs(coordsList) do
+        table.insert(shuffledCoords, love.math.random(1, #shuffledCoords + 1), coords)
+    end
+
+    for i = 1, #shuffledCoords do
+        local coords = shuffledCoords[i]
+        local chain = chains[i]
+        self:getTile(coords):setObject(chain)
+        chain:shuffleTo(coords)
+    end
+end
+
+
+
+function Board:isTargetReached()
+    for i = 1, self.SIZE.x do
+        for j = 1, self.SIZE.y do
+            local coords = Vec2(i, j)
+            local tile = self:getTile(coords)
+            if tile and not tile.gold then
+                return false
+            end
+        end
+    end
+    return true
+end
+
+
+
+function Board:releaseChains()
+    for i = 1, self.SIZE.x do
+        for j = 1, self.SIZE.y do
+            local coords = Vec2(i, j)
+            local tile = self:getTile(coords)
+            if tile then
+                local chain = tile:getChain()
+                if chain then
+                    chain:release()
+                end
+            end
+        end
+    end
+end
+
+
+
+function Board:launchEndAnimation()
+    self.endAnimation = 0
+    for i = 1, self.SIZE.x do
+        for j = 1, self.SIZE.y do
+            local coords = Vec2(i, j)
+            local tile = self:getTile(coords)
+            if tile then
+                tile:popOut((i + j - 2) * 0.12)
+            end
+        end
+    end
+end
+
+
+
 function Board:draw()
     local color = {0.75, 0.75, 0.75}
     -- Horizontal lines
     for i = 0, self.SIZE.y do
         local y = 8 + i * 15
-        _Display:drawLine(Vec2(58, y), Vec2(194, y), color)
+        local w = 136
+        if self.startAnimation then
+            w = math.max(math.min((self.startAnimation * 125) - 15 * i, 136), 0)
+        elseif self.endAnimation then
+            w = -math.max(math.min(((self.endAnimation - 0.2) * 125) - 15 * i, 136), 0)
+        end
+        if w > 0 then
+            _Display:drawLine(Vec2(58, y), Vec2(58 + w, y), color)
+        elseif w < 0 or self.endAnimation then
+            _Display:drawLine(Vec2(58 - w, y), Vec2(194, y), color)
+        end
     end
     -- Vertical lines
     for i = 0, self.SIZE.x do
         local x = 58 + i * 15
-        _Display:drawLine(Vec2(x, 8), Vec2(x, 143), color)
+        local h = 135
+        if self.startAnimation then
+            h = math.max(math.min(((self.startAnimation - 0.2) * 125) - 15 * i, 135), 0)
+        elseif self.endAnimation then
+            h = -math.max(math.min(((self.endAnimation - 0.4) * 125) - 15 * i, 135), 0)
+        end
+        if h > 0 then
+            _Display:drawLine(Vec2(x, 8), Vec2(x, 8 + h), color)
+        elseif h < 0 or self.endAnimation then
+            _Display:drawLine(Vec2(x, 8 - h), Vec2(x, 143), color)
+        end
     end
 
     -- Tiles
@@ -339,6 +491,16 @@ function Board:draw()
             local tile = self:getTile(Vec2(i, j))
             if tile then
                 tile:draw()
+            end
+        end
+    end
+
+    -- Objects
+    for i = 1, self.SIZE.x do
+        for j = 1, self.SIZE.y do
+            local tile = self:getTile(Vec2(i, j))
+            if tile then
+                tile:drawObject()
             end
         end
     end
@@ -363,7 +525,7 @@ end
 
 function Board:mousepressed(x, y, button)
     if button == 1 then
-        if self.hoverCoords then
+        if self.hoverCoords and self:getTile(self.hoverCoords) and self:getTile(self.hoverCoords):getChain() then
             self.selecting = true
         end
     elseif button == 2 then
@@ -373,6 +535,8 @@ function Board:mousepressed(x, y, button)
                 tile:getObject():rotate()
             end
         end
+    elseif button == 3 then
+        self:shuffle()
     end
 end
 

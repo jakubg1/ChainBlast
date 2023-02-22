@@ -5,7 +5,7 @@ local Game = class:derive("Game")
 -- Place your imports here
 local Vec2 = require("src.Vector2")
 local Sprite = require("src.Sprite")
-local Board = require("src.Board")
+local Level = require("src.Level")
 
 
 
@@ -132,10 +132,6 @@ function Game:new()
             size = Vec2(14)
         },
         {
-            pos = Vec2(0, 14),
-            size = Vec2(14)
-        },
-        {
             pos = Vec2(14),
             size = Vec2(14)
         },
@@ -162,6 +158,30 @@ function Game:new()
         {
             pos = Vec2(98, 14),
             size = Vec2(14)
+        },
+        {
+            pos = Vec2(14, 0),
+            size = Vec2(14)
+        },
+        {
+            pos = Vec2(28, 0),
+            size = Vec2(14)
+        },
+        {
+            pos = Vec2(42, 0),
+            size = Vec2(14)
+        },
+        {
+            pos = Vec2(112, 0),
+            size = Vec2(16)
+        },
+        {
+            pos = Vec2(112, 16),
+            size = Vec2(18)
+        },
+        {
+            pos = Vec2(112, 0),
+            size = Vec2(16)
         }
     }
 
@@ -255,20 +275,21 @@ function Game:new()
         standard = love.graphics.newImageFont("assets/fonts/standard.png", " abcdefghijklmnopqrstuvwxyząćęłńóśźżABCDEFGHIJKLMNOPQRSTUVWXYZĄĆĘŁŃÓŚŹŻ0123456789<>-+()[]_.,:;'!?@#$€%^&*\"/|\\", 1)
     }
 
-    self.board = Board(20)
+    self.level = nil
 
     self.sparks = {}
     self.explosions = {}
 
     self.score = 0
     self.scoreDisplay = 0
-    self.combo = 0
 end
 
 
 
 function Game:update(dt)
-    self.board:update(dt)
+    if self.level then
+        self.level:update(dt)
+    end
 
     for i = #self.sparks, 1, -1 do
         local spark = self.sparks[i]
@@ -292,8 +313,8 @@ end
 
 
 
-function Game:addScore(amount)
-    self.score = self.score + amount
+function Game:startLevel()
+    self.level = Level()
 end
 
 
@@ -302,44 +323,53 @@ function Game:draw()
     _Display:activate()
 
     -- Draw stuff onto the Display Canvas
-    self.board:draw()
+    if self.level then
+        self.level:draw()
+    else
+        _Display:drawText("Press LMB to start!", Vec2(10))
+    end
+    
     for i, spark in ipairs(self.sparks) do
         spark:draw()
     end
     for i, explosion in ipairs(self.explosions) do
         explosion:draw()
     end
-    _Display:drawText("Score:", 10, 50)
-    _Display:drawText(self.scoreDisplay, 10, 65)
 
     -- Draw the Display Canvas
     _Display:draw()
 
     -- Do debug stuff
     love.graphics.setCanvas()
-    _Display:drawText("You're in the game!", 10, 10)
-    _Display:drawText(string.format("Hovered Tile: %s", self.board.hoverCoords), 10, 25)
-    _Display:drawText(string.format("Sparks: %s", #self.sparks), 10, 40)
 
-    _Display:drawText("Hovered:", 10, 70)
-    if self.board.selecting then
-        for i, coords in ipairs(self.board.selectedCoords) do
-            _Display:drawText(tostring(coords), 20, 70 + i * 15)
-        end
-        for i, direction in ipairs(self.board.selectedDirections) do
-            _Display:drawText(tostring(direction), 50, 77 + i * 15)
-        end
-    elseif self.board.hoverCoords then
-        for i, coords in ipairs(self.board:getTile(self.board.hoverCoords):getObject():getGroup()) do
-            _Display:drawText(tostring(coords), 20, 70 + i * 15)
-        end
-    else
-        local y = 0
-        for i, group in ipairs(self.board:getMatchGroups()) do
-            y = y + 5
-            for j, coords in ipairs(group) do
-                y = y + 15
-                _Display:drawText(tostring(coords), 20, 70 + y)
+    if self.level and false then
+        local board = self.level.board
+        if board then
+            _Display:drawText("You're in the game!", Vec2(10))
+            _Display:drawText(string.format("Hovered Tile: %s", board.hoverCoords), Vec2(10, 25))
+            _Display:drawText(string.format("Sparks: %s", #self.sparks), Vec2(10, 40))
+
+            _Display:drawText("Hovered:", Vec2(10, 70))
+            if board.selecting then
+                for i, coords in ipairs(board.selectedCoords) do
+                    _Display:drawText(tostring(coords), Vec2(20, 70 + i * 15))
+                end
+                for i, direction in ipairs(board.selectedDirections) do
+                    _Display:drawText(tostring(direction), Vec2(50, 77 + i * 15))
+                end
+            elseif board.hoverCoords and board:getTile(board.hoverCoords) then
+                for i, coords in ipairs(board:getTile(board.hoverCoords):getObject():getGroup()) do
+                    _Display:drawText(tostring(coords), Vec2(20, 70 + i * 15))
+                end
+            else
+                local y = 0
+                for i, group in ipairs(board:getMatchGroups()) do
+                    y = y + 5
+                    for j, coords in ipairs(group) do
+                        y = y + 15
+                        _Display:drawText(tostring(coords), Vec2(20, 70 + y))
+                    end
+                end
             end
         end
     end
@@ -348,13 +378,21 @@ end
 
 
 function Game:mousepressed(x, y, button)
-    self.board:mousepressed(x, y, button)
+    if self.level then
+        self.level:mousepressed(x, y, button)
+    else
+        if button == 1 then
+            self:startLevel()
+        end
+    end
 end
 
 
 
 function Game:mousereleased(x, y, button)
-    self.board:mousereleased(x, y, button)
+    if self.level then
+        self.level:mousereleased(x, y, button)
+    end
 end
 
 

@@ -7,9 +7,10 @@ local Vec2 = require("src.Vector2")
 
 
 
-function Tile:new(board, coords)
+function Tile:new(board, coords, popDelay)
     self.board = board
     self.coords = coords
+    self.popDelay = popDelay
 
     self.SELECTION_ARROW_OFFSETS = {
         Vec2(3, -3),
@@ -25,6 +26,10 @@ function Tile:new(board, coords)
 
     self.gold = false
     self.goldAnimation = nil
+    self.popAnimation = nil
+    self.popOutDelay = nil
+    self.popOutAnimation = nil
+    self.poppedOut = false
 end
 
 
@@ -33,6 +38,36 @@ function Tile:update(dt)
     if self.object then
         self.object:update(dt)
     end
+
+    if self.popDelay then
+        self.popDelay = self.popDelay - dt
+        if self.popDelay <= 0 then
+            self.popDelay = nil
+            self.popAnimation = 1
+        end
+    end
+    if self.popAnimation then
+        self.popAnimation = self.popAnimation + dt * 10
+        if self.popAnimation >= 7 then
+            self.popAnimation = nil
+        end
+    end
+
+    if self.popOutDelay then
+        self.popOutDelay = self.popOutDelay - dt
+        if self.popOutDelay <= 0 then
+            self.popOutDelay = nil
+            self.popOutAnimation = 1
+        end
+    end
+    if self.popOutAnimation then
+        self.popOutAnimation = self.popOutAnimation + dt * 10
+        if self.popOutAnimation >= 7 then
+            self.popOutAnimation = nil
+            self.poppedOut = true
+        end
+    end
+
     if self.goldAnimation then
         self.goldAnimation = self.goldAnimation + dt * 10
         if self.goldAnimation >= 7 then
@@ -90,6 +125,12 @@ function Tile:makeGold()
     end
     self.gold = true
     self.goldAnimation = 0
+end
+
+
+
+function Tile:popOut(delay)
+    self.popOutDelay = delay
 end
 
 
@@ -160,11 +201,14 @@ end
 
 
 function Tile:getSubsprite()
+    --if self.popAnimation then
+    --    return 9 + math.floor(self.popAnimation)
+    --end
     if self.gold then
         if self.goldAnimation then
-            return 4 + math.floor(self.goldAnimation)
+            return 3 + math.floor(self.goldAnimation)
         end
-        return 3
+        return 2
     end
     return 1
 end
@@ -172,28 +216,55 @@ end
 
 
 function Tile:draw()
-    _Display:drawSprite(_Game.SPRITES.tiles, self:getSubsprite(), self:getPos())
+    if self.popDelay or self.poppedOut then
+        -- This Tile has not popped up yet or has already been popped out.
+        return
+    end
+
+    local subsprite = self:getSubsprite()
+    local pos = self:getPos()
+    --if subsprite >= 13 and subsprite <= 15 then
+    --    pos = pos - Vec2(1)
+    --    if subsprite == 14 then
+    --        pos = pos - Vec2(1)
+    --    end
+    --end
+    local alpha = 1
+    if self.popAnimation then
+        alpha = (self.popAnimation - 1) / 6
+    elseif self.popOutAnimation then
+        alpha = (7 - self.popOutAnimation) / 6
+    end
+    _Display:drawSprite(_Game.SPRITES.tiles, subsprite, pos, nil, alpha)
+
     if self:isSelected() then
-        _Display:drawRect(self:getPos(), Vec2(14), {1, 1, 1}, 0.4)
+        _Display:drawRect(self:getPos(), Vec2(14), true, {1, 1, 1}, 0.4)
     end
-    if self.object then
-        self.object:draw()
-    end
+
+    -- Debug side code
 --[[
     local color = {1, 0.5, 0}
     if self:isSideSelected(1) then
-        _Display:drawRect(self:getPos(), Vec2(14, 2), color)
+        _Display:drawRect(self:getPos(), Vec2(14, 2), true, color)
     end
     if self:isSideSelected(2) then
-        _Display:drawRect(self:getPos() + Vec2(12, 0), Vec2(2, 14), color)
+        _Display:drawRect(self:getPos() + Vec2(12, 0), true, Vec2(2, 14), color)
     end
     if self:isSideSelected(3) then
-        _Display:drawRect(self:getPos() + Vec2(0, 12), Vec2(14, 2), color)
+        _Display:drawRect(self:getPos() + Vec2(0, 12), true, Vec2(14, 2), color)
     end
     if self:isSideSelected(4) then
-        _Display:drawRect(self:getPos(), Vec2(2, 14), color)
+        _Display:drawRect(self:getPos(), Vec2(2, 14), true, color)
     end
     ]]
+end
+
+
+
+function Tile:drawObject()
+    if self.object then
+        self.object:draw()
+    end
 end
 
 
