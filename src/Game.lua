@@ -5,6 +5,7 @@ local Game = class:derive("Game")
 -- Place your imports here
 local Vec2 = require("src.Vector2")
 local Sprite = require("src.Sprite")
+local Sound = require("src.Sound")
 local Level = require("src.Level")
 
 
@@ -249,16 +250,19 @@ function Game:new()
 
     self.SPRITES = {
         chains = {
+            [0] = Sprite("assets/sprites/chain_rainbow.png", CHAIN_STATES),
             Sprite("assets/sprites/chain_blue.png", CHAIN_STATES),
             Sprite("assets/sprites/chain_red.png", CHAIN_STATES),
             Sprite("assets/sprites/chain_yellow.png", CHAIN_STATES)
         },
         chainLinks = {
+            [0] = Sprite("assets/sprites/chain_link_rainbow.png", {{pos = Vec2(), size = Vec2(2, 11)}}),
             Sprite("assets/sprites/chain_link_blue.png", {{pos = Vec2(), size = Vec2(2, 11)}}),
             Sprite("assets/sprites/chain_link_red.png", {{pos = Vec2(), size = Vec2(2, 11)}}),
             Sprite("assets/sprites/chain_link_yellow.png", {{pos = Vec2(), size = Vec2(2, 11)}}),
         },
         chainLinksH = {
+            [0] = Sprite("assets/sprites/chain_linkh_rainbow.png", {{pos = Vec2(), size = Vec2(11, 2)}}),
             Sprite("assets/sprites/chain_linkh_blue.png", {{pos = Vec2(), size = Vec2(11, 2)}}),
             Sprite("assets/sprites/chain_linkh_red.png", {{pos = Vec2(), size = Vec2(11, 2)}}),
             Sprite("assets/sprites/chain_linkh_yellow.png", {{pos = Vec2(), size = Vec2(11, 2)}}),
@@ -275,13 +279,54 @@ function Game:new()
         standard = love.graphics.newImageFont("assets/fonts/standard.png", " abcdefghijklmnopqrstuvwxyząćęłńóśźżABCDEFGHIJKLMNOPQRSTUVWXYZĄĆĘŁŃÓŚŹŻ0123456789<>-+()[]_.,:;'!?@#$€%^&*\"/|\\", 1)
     }
 
+    self.SOUNDS = {
+        chainDestroy = Sound("assets/sounds/chain_destroy.wav"),
+        chainLand = Sound("assets/sounds/chain_land.wav"),
+        chainRotate = Sound("assets/sounds/chain_rotate.wav"),
+        combo = Sound("assets/sounds/combo.wav"),
+        shuffle = Sound("assets/sounds/shuffle.wav", 1)
+    }
+
+    self.LEVELS = {
+        {
+            time = 30,
+            layout = {
+                {1, 1, 1, 1, 1, 1, 1, 1, 1},
+                {1, 1, 1, 1, 1, 1, 1, 1, 1},
+                {1, 1, 1, 1, 1, 1, 1, 1, 1},
+                {1, 1, 1, 1, 1, 1, 1, 1, 1},
+                {1, 1, 1, 1, 1, 1, 1, 1, 1},
+                {1, 1, 1, 1, 1, 1, 1, 1, 1},
+                {1, 1, 1, 1, 1, 1, 1, 1, 1},
+                {1, 1, 1, 1, 1, 1, 1, 1, 1},
+                {1, 1, 1, 1, 1, 1, 1, 1, 1}
+            }
+        },
+        {
+            time = 60,
+            layout = {
+                {0, 0, 0, 0, 0, 1, 1, 1, 1},
+                {0, 0, 0, 0, 1, 1, 1, 1, 1},
+                {0, 0, 0, 1, 1, 1, 1, 1, 1},
+                {0, 0, 1, 1, 1, 1, 1, 1, 1},
+                {0, 1, 1, 1, 1, 1, 1, 1, 0},
+                {1, 1, 1, 1, 1, 1, 1, 0, 0},
+                {1, 1, 1, 1, 1, 1, 0, 0, 0},
+                {1, 1, 1, 1, 1, 0, 0, 0, 0},
+                {1, 1, 1, 1, 0, 0, 0, 0, 0}
+            }
+        }
+    }
+
     self.level = nil
+    self.levelNumber = 1
 
     self.sparks = {}
     self.explosions = {}
 
     self.score = 0
     self.scoreDisplay = 0
+    self.lives = 3
 end
 
 
@@ -313,8 +358,16 @@ end
 
 
 
-function Game:startLevel()
-    self.level = Level()
+function Game:advanceLevel()
+    self.levelNumber = self.levelNumber + 1
+    self.lives = 3
+end
+
+
+
+function Game:startLevel(number)
+    number = number or self.levelNumber
+    self.level = Level(number, self.LEVELS[number])
 end
 
 

@@ -30,6 +30,8 @@ function Tile:new(board, coords, popDelay)
     self.popOutDelay = nil
     self.popOutAnimation = nil
     self.poppedOut = false
+
+    self.debug = false
 end
 
 
@@ -131,6 +133,12 @@ end
 
 function Tile:popOut(delay)
     self.popOutDelay = delay
+end
+
+
+
+function Tile:setDebug(debug)
+    self.debug = debug
 end
 
 
@@ -239,6 +247,9 @@ function Tile:draw()
 
     if self:isSelected() then
         _Display:drawRect(self:getPos(), Vec2(14), true, {1, 1, 1}, 0.4)
+    end
+    if self.debug then
+        _Display:drawRect(self:getPos(), Vec2(14), true, {0, 0, 1}, 0.4)
     end
 
     -- Debug side code

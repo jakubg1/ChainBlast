@@ -43,6 +43,7 @@ end
 function Display:drawSprite(sprite, state, pos, color, alpha)
     color = color or {1, 1, 1}
     love.graphics.setColor(color[1], color[2], color[3], alpha)
+    pos = pos:floor()
     if state then
         love.graphics.draw(sprite:getTexture(), sprite:getState(state), pos.x, pos.y)
     else
@@ -60,7 +61,7 @@ function Display:drawText(text, pos, align, font, color, alpha)
     love.graphics.setFont(font)
     if align then
         local size = Vec2(font:getWidth(text), font:getHeight())
-        pos = pos - size * align
+        pos = (pos - size * align):floor()
     end
     love.graphics.print(text, pos.x, pos.y)
 end

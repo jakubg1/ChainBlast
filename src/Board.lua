@@ -9,8 +9,9 @@ local Chain = require("src.Chain")
 
 
 
-function Board:new(level)
+function Board:new(level, layout)
     self.level = level
+    self.layout = layout
 
     self.SIZE = Vec2(9)
     self.DIRECTIONS = {
@@ -27,6 +28,8 @@ function Board:new(level)
     self.tiles = {}
 
     self.playerControl = true
+    self.started = false
+    self.over = false
     self.hoverCoords = nil
     self.selecting = false
     self.selectedCoords = {}
@@ -64,11 +67,11 @@ function Board:update(dt)
     end
 
     -- Game control
-    if self.fallingObjectCount > 0 or self.shufflingChainCount > 0 then
+    if self.fallingObjectCount > 0 or self.shufflingChainCount > 0 or self.over then
         self.playerControl = false
     end
 
-    if not self.playerControl and self.fallingObjectCount == 0 and self.shufflingChainCount == 0 and self.rotatingChainCount == 0 then
+    if not self.playerControl and self.fallingObjectCount == 0 and self.shufflingChainCount == 0 and self.rotatingChainCount == 0 and self.started and not self.over then
         -- Do another shot.
         self:handleMatches()
         self:fillHoles()
@@ -78,6 +81,8 @@ function Board:update(dt)
             if self:isTargetReached() then
                 self:releaseChains()
                 self.level:win()
+            elseif not self:areMovesAvailable() then
+                self:shuffle()
             else
                 self.playerControl = true
                 self.level.combo = 0
@@ -154,7 +159,8 @@ function Board:fill()
         for i = 1, 9 do
             self.tiles[i] = {}
             for j = 1, 9 do
-                if i + j >= 7 and i + j <= 13 then
+                --if i + j >= 7 and i + j <= 13 then
+                if self.layout[j][i] == 1 then
                     local coords = Vec2(i, j)
                     local tile = Tile(self, coords:clone(), (i + j) * 0.12)
                     local chain = Chain(self, coords:clone())
@@ -196,7 +202,7 @@ function Board:expandSelection(direction)
     local tile = self:getTile(self.hoverCoords)
     local prevTile = self:getTile(self.selectedCoords[#self.selectedCoords])
 
-    if tile and tile:getChain() and not tile:isSideSelected(oppositeDirection) then
+    if tile and tile:getChain() and not tile:isSideSelected(oppositeDirection) and (not prevTile or not prevTile:getChain() or prevTile:getChain():matchesWithColor(tile:getChain().color)) then
         tile:select()
         tile:selectSide(oppositeDirection)
         tile:getChain():rotate(oppositeDirection, true)
@@ -325,6 +331,10 @@ function Board:handleMatches()
             self.level:addTime((#match - 3) * 3)
         end
         self.level.largestGroup = math.max(self.level.largestGroup, #match)
+        _Game.SOUNDS.chainDestroy:play()
+        if self.level.combo > 1 then
+            _Game.SOUNDS.combo:play(0.65 + (self.level.combo - 2) * 0.1)
+        end
     end
 end
 
@@ -372,6 +382,24 @@ end
 
 
 
+function Board:areMovesAvailable()
+    for i = 1, self.SIZE.x do
+        for j = 1, self.SIZE.y do
+            local coords = Vec2(i, j)
+            local tile = self:getTile(coords)
+            if tile then
+                local chain = tile:getChain()
+                if chain and chain:canMakeMatch() then
+                    return true
+                end
+            end
+        end
+    end
+    return false
+end
+
+
+
 function Board:shuffle()
     local coordsList = {}
     local chains = {}
@@ -401,6 +429,8 @@ function Board:shuffle()
         self:getTile(coords):setObject(chain)
         chain:shuffleTo(coords)
     end
+
+    _Game.SOUNDS.shuffle:play()
 end
 
 
@@ -430,6 +460,44 @@ function Board:releaseChains()
                 if chain then
                     chain:release()
                 end
+            end
+        end
+    end
+end
+
+
+
+function Board:lose()
+    self.over = true
+    self:panicChains()
+end
+
+
+
+function Board:panicChains()
+    for i = 1, self.SIZE.x do
+        for j = 1, self.SIZE.y do
+            local coords = Vec2(i, j)
+            local tile = self:getTile(coords)
+            if tile then
+                local chain = tile:getChain()
+                if chain then
+                    chain:panic()
+                end
+            end
+        end
+    end
+end
+
+
+
+function Board:nukeEverything()
+    for i = 1, self.SIZE.x do
+        for j = 1, self.SIZE.y do
+            local coords = Vec2(i, j)
+            local tile = self:getTile(coords)
+            if tile then
+                tile:destroyObject()
             end
         end
     end
@@ -535,8 +603,6 @@ function Board:mousepressed(x, y, button)
                 tile:getObject():rotate()
             end
         end
-    elseif button == 3 then
-        self:shuffle()
     end
 end
 

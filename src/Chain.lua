@@ -17,7 +17,8 @@ function Chain:new(board, coords)
 
     -- 1 = classic, 2 = cross
     self.shape = love.math.random() < 0.1 and 2 or 1
-    self.color = love.math.random(1, 3)
+    -- 0 = rainbow
+    self.color = love.math.random() < 0.05 and 0 or love.math.random(1, 3)
 
     -- 1 = vertical, 2 = horizontal
     self.maxRotation = 3 - self.shape
@@ -36,11 +37,20 @@ function Chain:new(board, coords)
     self.releasePos = nil
     self.releaseSpeed = nil
     self.releaseTime = nil
+    self.panicTime = nil
+    self.panicOffset = Vec2()
 end
 
 
 
 function Chain:update(dt)
+    if self.rotationAnim then
+        self.rotationAnim = self.rotationAnim + 40 * dt
+        if self.rotationAnim >= 4 then
+            self.rotationAnim = nil
+        end
+    end
+    
     if self.fallTarget then
         if self.fallDelay then
             self.fallDelay = self.fallDelay - dt
@@ -56,6 +66,10 @@ function Chain:update(dt)
                 self.fallTarget = nil
                 self.fallSpeed = 0
                 self.board.fallingObjectCount = self.board.fallingObjectCount - 1
+                -- Play the landing sound only when there's no falling chain below.
+                if not self.tile:getNeighbor(3) or not self.tile:getNeighbor(3):getChain() or not self.tile:getNeighbor(3):getChain().fallDelay then
+                    _Game.SOUNDS.chainLand:play()
+                end
             end
         end
     end
@@ -82,11 +96,9 @@ function Chain:update(dt)
         self.releasePos = self.releasePos + self.releaseSpeed * dt
     end
 
-    if self.rotationAnim then
-        self.rotationAnim = self.rotationAnim + 40 * dt
-        if self.rotationAnim >= 4 then
-            self.rotationAnim = nil
-        end
+    if self.panicTime then
+        self.panicTime = self.panicTime + dt
+        self.panicOffset = Vec2(love.math.randomNormal(self.panicTime), love.math.randomNormal(self.panicTime))
     end
 end
 
@@ -96,7 +108,13 @@ function Chain:getPos()
     if self.releasePos then
         return self.releasePos
     end
-    return self.board:getTilePos(self.coords)
+    return self.board:getTilePos(self.coords) + self.panicOffset
+end
+
+
+
+function Chain:matchesWithColor(color)
+    return self.color == color or self.color == 0 or color == 0
 end
 
 
@@ -124,7 +142,7 @@ function Chain:isConnected(direction)
         return false
     end
     local chain = tile:getObject()
-    if not chain.fallTarget and self.color == chain.color and chain:hasConnection((direction + 1) % 4 + 1) then
+    if not chain.fallTarget and self:matchesWithColor(chain.color) and chain:hasConnection((direction + 1) % 4 + 1) then
         return true
     end
 end
@@ -157,12 +175,40 @@ end
 
 
 
+function Chain:canMakeMatch(directions)
+    if not directions then
+        if self.shape == 1 then
+            return self:canMakeMatch({1, 3}) or self:canMakeMatch({2, 4})
+        elseif self.shape == 2 then
+            return self:canMakeMatch({1, 2, 3, 4})
+        end
+    end
+
+    local potentialConnections = 0
+    for i, direction in ipairs(directions) do
+        local tile = self.tile:getNeighbor(direction)
+        if tile then
+            local chain = tile:getChain()
+            if chain and self:matchesWithColor(chain.color) then
+                potentialConnections = potentialConnections + 1
+            end
+        end
+        if potentialConnections >= 2 then
+            return true
+        end
+    end
+    return false
+end
+
+
+
 function Chain:rotate(rotation, temporary)
     rotation = rotation or self.rotation + 1
     local newRotation = (rotation - 1) % self.maxRotation + 1
 
     if self.rotation ~= newRotation then
         self.rotationAnim = 1
+        _Game.SOUNDS.chainRotate:play()
     end
     self.rotation = newRotation
     if not temporary then
@@ -204,6 +250,12 @@ function Chain:release()
     self.releasePos = self:getPos()
     self.releaseSpeed = Vec2(love.math.random() * 75 - 37.5, love.math.random() * -37.5 - 75)
     self.releaseTime = 0
+end
+
+
+
+function Chain:panic()
+    self.panicTime = 0
 end
 
 
