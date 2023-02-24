@@ -6,23 +6,34 @@ local Sound = class:derive("Sound")
 
 
 
-function Sound:new(path, instances)
+function Sound:new(path, instances, isLooping)
     instances = instances or 4
     self.instances = {}
     for i = 1, instances do
         self.instances[i] = love.audio.newSource(path, "static")
+        self.instances[i]:setLooping(isLooping or false)
     end
 end
 
 
 
-function Sound:play(pitch)
+function Sound:play(volume, pitch)
+    volume = volume or 1
     pitch = pitch or 1
     
     local instance = self:getFreeInstance()
-    instance:setPitch(pitch)
     instance:stop()
+    instance:setVolume(volume)
+    instance:setPitch(pitch)
     instance:play()
+end
+
+
+
+function Sound:stop()
+    for i, instance in ipairs(self.instances) do
+        instance:stop()
+    end
 end
 
 

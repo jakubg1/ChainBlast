@@ -33,11 +33,11 @@ Day 3: Matching, scoring, chain connections, turning tiles gold and making a fon
 Day 4: Actual matches, rotating links when matching, rotation animations, cross links
 Day 5: Different board shapes, level intro/outro animations, HUD, timer, potentially code cleanup (well turns out not)
 Day 6: Level complete/lose screen, more than one level, rainbow links, lives, a few sound effects
+Day 7: Main menu, power meter, more sound effects
 --- WE'RE HERE
-Day 7: Main menu, settings, game over screen, power meter, more sound effects?
-Day 8: Obstacles, special tiles, more chain colors, designing all 10 levels
-Day 9: Graphical stuff I'll come up with (backgrounds, shakes, etc.), playtests, balancing
-Day 10: QoL, balancing, adjustments and anything that hasn't been addressed so far
+Day 8: Settings, game over screen, obstacles, special tiles, more chain colors
+Day 9: Graphical stuff I'll come up with (backgrounds, shakes, etc.), music, designing all 10 levels, playtests, balancing
+Day 10: QoL, balancing, adjustments and anything that hasn't been addressed so far. Packaging it up, and sending!
 
 
 GIMP color ff -> c0: 47% cover

@@ -113,10 +113,10 @@ end
 
 
 function Tile:destroyObject()
-    if self.object then
+    if self.object and not self.object.fallTarget then
         self.object:onDestroy()
+        self.object = nil
     end
-    self.object = nil
 end
 
 

@@ -6,6 +6,8 @@ local Game = class:derive("Game")
 local Vec2 = require("src.Vector2")
 local Sprite = require("src.Sprite")
 local Sound = require("src.Sound")
+
+local MainMenu = require("src.MainMenu")
 local Level = require("src.Level")
 
 
@@ -280,16 +282,25 @@ function Game:new()
     }
 
     self.SOUNDS = {
+        boardStart = Sound("assets/sounds/board_start.wav", 1),
+        boardEnd = Sound("assets/sounds/board_end.wav", 1),
+        bombAlarm = Sound("assets/sounds/bomb_alarm.wav", 1),
+        clock = Sound("assets/sounds/clock1.wav", 1),
+        clockAlarm = Sound("assets/sounds/clock1.wav", 1, true),
         chainDestroy = Sound("assets/sounds/chain_destroy.wav"),
         chainLand = Sound("assets/sounds/chain_land.wav"),
         chainRotate = Sound("assets/sounds/chain_rotate.wav"),
         combo = Sound("assets/sounds/combo.wav"),
+        explosion = Sound("assets/sounds/explosion.wav", 1),
+        explosion2 = Sound("assets/sounds/explosion2.wav"),
+        levelLose = Sound("assets/sounds/level_lose_T.wav", 1),
+        levelStart = Sound("assets/sounds/level_start_T.wav", 1),
         shuffle = Sound("assets/sounds/shuffle.wav", 1)
     }
 
     self.LEVELS = {
         {
-            time = 30,
+            time = 12,
             layout = {
                 {1, 1, 1, 1, 1, 1, 1, 1, 1},
                 {1, 1, 1, 1, 1, 1, 1, 1, 1},
@@ -303,22 +314,22 @@ function Game:new()
             }
         },
         {
-            time = 60,
+            time = 40,
             layout = {
-                {0, 0, 0, 0, 0, 1, 1, 1, 1},
-                {0, 0, 0, 0, 1, 1, 1, 1, 1},
-                {0, 0, 0, 1, 1, 1, 1, 1, 1},
-                {0, 0, 1, 1, 1, 1, 1, 1, 1},
-                {0, 1, 1, 1, 1, 1, 1, 1, 0},
-                {1, 1, 1, 1, 1, 1, 1, 0, 0},
-                {1, 1, 1, 1, 1, 1, 0, 0, 0},
-                {1, 1, 1, 1, 1, 0, 0, 0, 0},
-                {1, 1, 1, 1, 0, 0, 0, 0, 0}
+                {0, 0, 1, 1, 1, 1, 1, 0, 0},
+                {0, 1, 0, 0, 1, 0, 0, 1, 0},
+                {1, 0, 0, 0, 0, 0, 0, 0, 1},
+                {1, 0, 0, 0, 0, 0, 0, 0, 1},
+                {1, 0, 0, 0, 0, 0, 0, 0, 1},
+                {1, 1, 0, 0, 0, 0, 0, 1, 1},
+                {1, 1, 1, 0, 0, 0, 1, 1, 1},
+                {0, 1, 1, 1, 0, 1, 1, 1, 0},
+                {0, 0, 1, 1, 1, 1, 1, 0, 0}
             }
         }
     }
 
-    self.level = nil
+    self.level = MainMenu()
     self.levelNumber = 1
 
     self.sparks = {}
@@ -332,9 +343,7 @@ end
 
 
 function Game:update(dt)
-    if self.level then
-        self.level:update(dt)
-    end
+    self.level:update(dt)
 
     for i = #self.sparks, 1, -1 do
         local spark = self.sparks[i]
@@ -376,11 +385,7 @@ function Game:draw()
     _Display:activate()
 
     -- Draw stuff onto the Display Canvas
-    if self.level then
-        self.level:draw()
-    else
-        _Display:drawText("Press LMB to start!", Vec2(10))
-    end
+    self.level:draw()
     
     for i, spark in ipairs(self.sparks) do
         spark:draw()
@@ -431,21 +436,13 @@ end
 
 
 function Game:mousepressed(x, y, button)
-    if self.level then
-        self.level:mousepressed(x, y, button)
-    else
-        if button == 1 then
-            self:startLevel()
-        end
-    end
+    self.level:mousepressed(x, y, button)
 end
 
 
 
 function Game:mousereleased(x, y, button)
-    if self.level then
-        self.level:mousereleased(x, y, button)
-    end
+    self.level:mousereleased(x, y, button)
 end
 
 

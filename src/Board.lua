@@ -28,7 +28,6 @@ function Board:new(level, layout)
     self.tiles = {}
 
     self.playerControl = true
-    self.started = false
     self.over = false
     self.hoverCoords = nil
     self.selecting = false
@@ -45,6 +44,7 @@ function Board:new(level, layout)
     self.endAnimation = nil
 
     self:fill()
+    _Game.SOUNDS.boardStart:play()
 end
 
 
@@ -71,7 +71,7 @@ function Board:update(dt)
         self.playerControl = false
     end
 
-    if not self.playerControl and self.fallingObjectCount == 0 and self.shufflingChainCount == 0 and self.rotatingChainCount == 0 and self.started and not self.over then
+    if not self.playerControl and self.fallingObjectCount == 0 and self.shufflingChainCount == 0 and self.rotatingChainCount == 0 and not self.over then
         -- Do another shot.
         self:handleMatches()
         self:fillHoles()
@@ -109,6 +109,17 @@ function Board:update(dt)
                         -- We are going backwards!
                         self:shrinkSelection(i)
                     else
+                        self:expandSelection(i)
+                    end
+                    break
+                elseif lastSelectedCoords + self.DIRECTIONS[i] * 2 == self.hoverCoords then
+                    -- Allow double expansions, for extra fast sweeps.
+                    if self.hoverCoords == self.selectedCoords[#self.selectedCoords - 2] then
+                        -- We are going backwards!
+                        self:shrinkSelection(i)
+                        self:shrinkSelection(i)
+                    else
+                        self:expandSelection(i)
                         self:expandSelection(i)
                     end
                     break
@@ -199,7 +210,8 @@ end
 function Board:expandSelection(direction)
     local oppositeDirection = (direction + 1) % 4 + 1
 
-    local tile = self:getTile(self.hoverCoords)
+    local newCoords = self.selectedCoords[#self.selectedCoords] + self.DIRECTIONS[direction]
+    local tile = self:getTile(newCoords)
     local prevTile = self:getTile(self.selectedCoords[#self.selectedCoords])
 
     if tile and tile:getChain() and not tile:isSideSelected(oppositeDirection) and (not prevTile or not prevTile:getChain() or prevTile:getChain():matchesWithColor(tile:getChain().color)) then
@@ -213,7 +225,7 @@ function Board:expandSelection(direction)
                 prevTile:getChain():rotate(oppositeDirection, true)
             end
         end
-        table.insert(self.selectedCoords, self.hoverCoords)
+        table.insert(self.selectedCoords, newCoords)
         table.insert(self.selectedDirections, direction)
     end
 end
@@ -223,7 +235,8 @@ end
 function Board:shrinkSelection(direction)
     local oppositeDirection = (direction + 1) % 4 + 1
 
-    local tile = self:getTile(self.hoverCoords)
+    local newCoords = self.selectedCoords[#self.selectedCoords] + self.DIRECTIONS[direction]
+    local tile = self:getTile(newCoords)
     local prevTile = self:getTile(self.selectedCoords[#self.selectedCoords]) -- This tile will be unselected.
 
     if prevTile and prevTile:getChain() then
@@ -322,19 +335,24 @@ function Board:handleMatches()
             local tile = self:getTile(coords)
             assert(tile, string.format("Tried selecting a nonexistent tile on %s", coords))
             tile:destroyObject()
+            if tile.gold then
+                self.level:addToBombMeter(1)
+            end
             tile:makeGold()
         end
         self.level:addCombo()
         local multiplier = (self.level.combo * (self.level.combo + 1)) / 2
         self.level:addScore((#match - 2) * 100 * multiplier)
         if #match > 3 then
-            self.level:addTime((#match - 3) * 3)
+            self.level:addTime(#match - 3)
         end
         self.level.largestGroup = math.max(self.level.largestGroup, #match)
         _Game.SOUNDS.chainDestroy:play()
         if self.level.combo > 1 then
-            _Game.SOUNDS.combo:play(0.65 + (self.level.combo - 2) * 0.1)
+            _Game.SOUNDS.combo:play(1, 0.65 + (self.level.combo - 2) * 0.1)
         end
+
+        self.level:startTimer()
     end
 end
 
@@ -378,6 +396,27 @@ function Board:fillHolesUp()
             end
         end
     end
+end
+
+
+
+function Board:explodeBomb(bombCoords)
+    for i = -1, 1 do
+        for j = -1, 1 do
+            local coords = bombCoords + Vec2(i, j)
+            local tile = self:getTile(coords)
+            if tile and tile:getObject() and not tile:getObject().shuffleTarget then
+                if tile:getChain() then
+                    tile:makeGold()
+                    self.level:addScore(100)
+                end
+                tile:destroyObject()
+            end
+        end
+    end
+    self:fillHoles()
+    self:fillHolesUp()
+    _Game.SOUNDS.explosion2:play()
 end
 
 
@@ -450,6 +489,25 @@ end
 
 
 
+function Board:getRandomNonGoldTile()
+    local tiles = {}
+    for i = 1, self.SIZE.x do
+        for j = 1, self.SIZE.y do
+            local coords = Vec2(i, j)
+            local tile = self:getTile(coords)
+            if tile and not tile.gold then
+                table.insert(tiles, tile)
+            end
+        end
+    end
+    if #tiles == 0 then
+        return
+    end
+    return tiles[love.math.random(#tiles)]
+end
+
+
+
 function Board:releaseChains()
     for i = 1, self.SIZE.x do
         for j = 1, self.SIZE.y do
@@ -501,6 +559,7 @@ function Board:nukeEverything()
             end
         end
     end
+    _Game.SOUNDS.explosion:play()
 end
 
 
@@ -516,6 +575,7 @@ function Board:launchEndAnimation()
             end
         end
     end
+    _Game.SOUNDS.boardEnd:play()
 end
 
 
@@ -597,11 +657,13 @@ function Board:mousepressed(x, y, button)
             self.selecting = true
         end
     elseif button == 2 then
-        if self.hoverCoords then
-            local tile = self:getTile(self.hoverCoords)
-            if tile and tile:getObjectType() == "chain" then
-                tile:getObject():rotate()
-            end
+        local coords = self:getTileCoords(_MousePos)
+        if coords then
+            --local tile = self:getTile(coords)
+            --if tile and tile:getObjectType() == "chain" then
+            --    tile:getObject():rotate()
+            --end
+            self.level:spawnBomb(coords)
         end
     end
 end

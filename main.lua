@@ -56,3 +56,43 @@ end
 function love.mousereleased(x, y, button)
     _Game:mousereleased(x, y, button)
 end
+
+
+
+function _GetRainbowColor(t)
+    t = t * 3
+    local r = math.min(math.max(2 * (1 - math.abs(t % 3)), 0), 1) + math.min(math.max(2 * (1 - math.abs((t % 3) - 3)), 0), 1)
+    local g = math.min(math.max(2 * (1 - math.abs((t % 3) - 1)), 0), 1)
+    local b = math.min(math.max(2 * (1 - math.abs((t % 3) - 2)), 0), 1)
+    return {r, g, b}
+end
+
+
+
+function _LoadFile(path)
+	local file, err = io.open(path, "r")
+	if not file then
+		return
+	end
+	io.input(file)
+	local contents = io.read("*a")
+	io.close(file)
+	return contents
+end
+
+
+
+function _StrSplit(s, k)
+	local t = {}
+	local l = k:len()
+	while true do
+		local n = s:find("%" .. k)
+		if n then
+			table.insert(t, s:sub(1, n - 1))
+			s = s:sub(n + l)
+		else
+			table.insert(t, s)
+			return t
+		end
+	end
+end

@@ -60,10 +60,17 @@ function Display:drawText(text, pos, align, font, color, alpha)
     love.graphics.setColor(color[1], color[2], color[3], alpha)
     love.graphics.setFont(font)
     if align then
-        local size = Vec2(font:getWidth(text), font:getHeight())
+        local size = self:getTextSize(text, font)
         pos = (pos - size * align):floor()
     end
     love.graphics.print(text, pos.x, pos.y)
+end
+
+
+
+function Display:getTextSize(text, font)
+    font = font or _Game.FONTS.standard
+    return Vec2(font:getWidth(text), font:getHeight())
 end
 
 
