@@ -5,6 +5,7 @@ local Game = class:derive("Game")
 -- Place your imports here
 local Vec2 = require("src.Vector2")
 local Sprite = require("src.Sprite")
+local Settings = require("src.Settings")
 local Sound = require("src.Sound")
 
 local MainMenu = require("src.MainMenu")
@@ -185,6 +186,26 @@ function Game:new()
         {
             pos = Vec2(112, 0),
             size = Vec2(16)
+        },
+        {
+            pos = Vec2(42, 28),
+            size = Vec2(14)
+        },
+        {
+            pos = Vec2(56, 28),
+            size = Vec2(14)
+        },
+        {
+            pos = Vec2(0, 28),
+            size = Vec2(14)
+        },
+        {
+            pos = Vec2(14, 28),
+            size = Vec2(14)
+        },
+        {
+            pos = Vec2(28),
+            size = Vec2(14)
         }
     }
 
@@ -255,20 +276,30 @@ function Game:new()
             [0] = Sprite("assets/sprites/chain_rainbow.png", CHAIN_STATES),
             Sprite("assets/sprites/chain_blue.png", CHAIN_STATES),
             Sprite("assets/sprites/chain_red.png", CHAIN_STATES),
-            Sprite("assets/sprites/chain_yellow.png", CHAIN_STATES)
+            Sprite("assets/sprites/chain_yellow.png", CHAIN_STATES),
+            Sprite("assets/sprites/chain_green.png", CHAIN_STATES),
+            Sprite("assets/sprites/chain_pink.png", CHAIN_STATES),
+            Sprite("assets/sprites/chain_cyan.png", CHAIN_STATES)
         },
         chainLinks = {
             [0] = Sprite("assets/sprites/chain_link_rainbow.png", {{pos = Vec2(), size = Vec2(2, 11)}}),
             Sprite("assets/sprites/chain_link_blue.png", {{pos = Vec2(), size = Vec2(2, 11)}}),
             Sprite("assets/sprites/chain_link_red.png", {{pos = Vec2(), size = Vec2(2, 11)}}),
             Sprite("assets/sprites/chain_link_yellow.png", {{pos = Vec2(), size = Vec2(2, 11)}}),
+            Sprite("assets/sprites/chain_link_green.png", {{pos = Vec2(), size = Vec2(2, 11)}}),
+            Sprite("assets/sprites/chain_link_pink.png", {{pos = Vec2(), size = Vec2(2, 11)}}),
+            Sprite("assets/sprites/chain_link_cyan.png", {{pos = Vec2(), size = Vec2(2, 11)}})
         },
         chainLinksH = {
             [0] = Sprite("assets/sprites/chain_linkh_rainbow.png", {{pos = Vec2(), size = Vec2(11, 2)}}),
             Sprite("assets/sprites/chain_linkh_blue.png", {{pos = Vec2(), size = Vec2(11, 2)}}),
             Sprite("assets/sprites/chain_linkh_red.png", {{pos = Vec2(), size = Vec2(11, 2)}}),
             Sprite("assets/sprites/chain_linkh_yellow.png", {{pos = Vec2(), size = Vec2(11, 2)}}),
+            Sprite("assets/sprites/chain_linkh_green.png", {{pos = Vec2(), size = Vec2(11, 2)}}),
+            Sprite("assets/sprites/chain_linkh_pink.png", {{pos = Vec2(), size = Vec2(11, 2)}}),
+            Sprite("assets/sprites/chain_linkh_cyan.png", {{pos = Vec2(), size = Vec2(11, 2)}})
         },
+        crate = Sprite("assets/sprites/crate.png", {{pos = Vec2(), size = Vec2(14)}, {pos = Vec2(14, 0), size = Vec2(14)}}),
         hover = Sprite("assets/sprites/hover.png", HOVER_STATES),
         selection = Sprite("assets/sprites/selection.png", SELECTION_STATES),
         selectionArrows = Sprite("assets/sprites/selection_arrows.png", SELECTION_ARROW_STATES),
@@ -291,43 +322,126 @@ function Game:new()
         chainLand = Sound("assets/sounds/chain_land.wav"),
         chainRotate = Sound("assets/sounds/chain_rotate.wav"),
         combo = Sound("assets/sounds/combo.wav"),
+        crateDestroy = Sound("assets/sounds/crate_destroy.wav"),
         explosion = Sound("assets/sounds/explosion.wav", 1),
         explosion2 = Sound("assets/sounds/explosion2.wav"),
+        iceBreak = Sound("assets/sounds/ice_break.wav"),
         levelLose = Sound("assets/sounds/level_lose_T.wav", 1),
         levelStart = Sound("assets/sounds/level_start_T.wav", 1),
-        shuffle = Sound("assets/sounds/shuffle.wav", 1)
+        levelWin = Sound("assets/sounds/level_win_T.wav", 1),
+        shuffle = Sound("assets/sounds/shuffle.wav", 1),
+        uiHover = Sound("assets/sounds/ui_hover.wav"),
+        uiSelect = Sound("assets/sounds/ui_select.wav"),
+        uiStats = Sound("assets/sounds/ui_stats.wav")
     }
 
+    -- 0: no tile
+    -- 1: chain goes here
+    -- 2: box
+    -- 3: double box
+    -- 4-6: ice (levels 1-3)
     self.LEVELS = {
-        {
-            time = 12,
-            layout = {
-                {1, 1, 1, 1, 1, 1, 1, 1, 1},
-                {1, 1, 1, 1, 1, 1, 1, 1, 1},
-                {1, 1, 1, 1, 1, 1, 1, 1, 1},
-                {1, 1, 1, 1, 1, 1, 1, 1, 1},
-                {1, 1, 1, 1, 1, 1, 1, 1, 1},
-                {1, 1, 1, 1, 1, 1, 1, 1, 1},
-                {1, 1, 1, 1, 1, 1, 1, 1, 1},
-                {1, 1, 1, 1, 1, 1, 1, 1, 1},
-                {1, 1, 1, 1, 1, 1, 1, 1, 1}
-            }
-        },
-        {
+        { -- Level 5
             time = 40,
             layout = {
+                {0, 0, 0, 0, 0, 0, 0, 0, 0},
+                {0, 4, 4, 4, 4, 4, 4, 4, 0},
+                {0, 4, 4, 4, 4, 4, 4, 4, 0},
+                {0, 4, 4, 5, 5, 5, 4, 4, 0},
+                {0, 4, 4, 5, 5, 5, 4, 4, 0},
+                {0, 4, 4, 5, 5, 5, 4, 4, 0},
+                {0, 4, 4, 4, 4, 4, 4, 4, 0},
+                {0, 4, 4, 4, 4, 4, 4, 4, 0},
+                {0, 0, 0, 0, 0, 0, 0, 0, 0}
+            }
+        },
+        { -- Level 1
+            time = 60,
+            layout = {
+                {0, 0, 0, 0, 0, 0, 0, 0, 0},
+                {0, 1, 1, 1, 1, 1, 1, 1, 0},
+                {0, 1, 1, 1, 1, 1, 1, 1, 0},
+                {0, 1, 1, 1, 1, 1, 1, 1, 0},
+                {0, 1, 1, 1, 1, 1, 1, 1, 0},
+                {0, 1, 1, 1, 1, 1, 1, 1, 0},
+                {0, 1, 1, 1, 1, 1, 1, 1, 0},
+                {0, 1, 1, 1, 1, 1, 1, 1, 0},
+                {0, 0, 0, 0, 0, 0, 0, 0, 0}
+            }
+        },
+        { -- Level 2
+            time = 30,
+            layout = {
+                {1, 0, 1, 0, 1, 0, 1, 0, 1},
+                {1, 0, 1, 0, 1, 0, 1, 0, 1},
+                {1, 0, 1, 0, 1, 0, 1, 0, 1},
+                {1, 0, 1, 0, 1, 0, 1, 0, 1},
+                {1, 0, 1, 0, 1, 0, 1, 0, 1},
+                {1, 0, 1, 0, 1, 0, 1, 0, 1},
+                {1, 0, 1, 0, 1, 0, 1, 0, 1},
+                {1, 0, 1, 0, 1, 0, 1, 0, 1},
+                {1, 0, 1, 0, 1, 0, 1, 0, 1}
+            }
+        },
+        { -- Level 3
+            time = 45,
+            layout = {
                 {0, 0, 1, 1, 1, 1, 1, 0, 0},
-                {0, 1, 0, 0, 1, 0, 0, 1, 0},
-                {1, 0, 0, 0, 0, 0, 0, 0, 1},
-                {1, 0, 0, 0, 0, 0, 0, 0, 1},
-                {1, 0, 0, 0, 0, 0, 0, 0, 1},
-                {1, 1, 0, 0, 0, 0, 0, 1, 1},
-                {1, 1, 1, 0, 0, 0, 1, 1, 1},
-                {0, 1, 1, 1, 0, 1, 1, 1, 0},
+                {0, 1, 1, 1, 1, 1, 1, 1, 0},
+                {1, 1, 2, 2, 1, 2, 2, 1, 1},
+                {1, 2, 2, 2, 2, 2, 2, 2, 1},
+                {1, 2, 2, 2, 2, 2, 2, 2, 1},
+                {1, 1, 2, 2, 2, 2, 2, 1, 1},
+                {1, 1, 1, 2, 2, 2, 1, 1, 1},
+                {0, 1, 1, 1, 2, 1, 1, 1, 0},
                 {0, 0, 1, 1, 1, 1, 1, 0, 0}
+            }
+        },
+        { -- Level 4
+            time = 70,
+            layout = {
+                {1, 1, 1, 1, 1, 1, 1, 1, 1},
+                {1, 1, 1, 1, 1, 1, 1, 1, 1},
+                {1, 1, 1, 1, 1, 1, 1, 1, 1},
+                {0, 0, 0, 0, 0, 0, 0, 0, 0},
+                {2, 2, 2, 2, 2, 2, 2, 2, 2},
+                {2, 2, 2, 2, 2, 2, 2, 2, 2},
+                {2, 2, 2, 2, 2, 2, 2, 2, 2},
+                {2, 2, 2, 2, 2, 2, 2, 2, 2},
+                {2, 2, 2, 2, 2, 2, 2, 2, 2}
+            }
+        },
+        { -- Level 8
+            time = 45,
+            layout = {
+                {5, 5, 5, 5, 5, 5, 5, 5, 5},
+                {5, 5, 5, 5, 5, 5, 5, 5, 5},
+                {5, 5, 5, 5, 5, 5, 5, 5, 5},
+                {0, 0, 0, 0, 0, 0, 0, 0, 0},
+                {0, 0, 1, 0, 1, 0, 1, 0, 0},
+                {0, 0, 0, 0, 0, 0, 0, 0, 0},
+                {0, 0, 1, 0, 1, 0, 1, 0, 0},
+                {0, 0, 0, 0, 0, 0, 0, 0, 0},
+                {0, 0, 1, 0, 1, 0, 1, 0, 0}
+            }
+        },
+        { -- Level 7
+            time = 30,
+            layout = {
+                {3, 1, 3, 1, 3, 1, 3, 1, 3},
+                {1, 1, 1, 1, 1, 1, 1, 1, 1},
+                {3, 1, 3, 1, 3, 1, 3, 1, 3},
+                {1, 1, 1, 1, 1, 1, 1, 1, 1},
+                {3, 1, 3, 1, 3, 1, 3, 1, 3},
+                {1, 1, 1, 1, 1, 1, 1, 1, 1},
+                {3, 1, 3, 1, 3, 1, 3, 1, 3},
+                {1, 1, 1, 1, 1, 1, 1, 1, 1},
+                {3, 1, 3, 1, 3, 1, 3, 1, 3}
             }
         }
     }
+
+    self.settings = Settings()
 
     self.level = MainMenu()
     self.levelNumber = 1
@@ -399,6 +513,8 @@ function Game:draw()
 
     -- Do debug stuff
     love.graphics.setCanvas()
+
+    _Display:drawText(string.format("FPS: %s", love.timer.getFPS()), Vec2(10))
 
     if self.level and false then
         local board = self.level.board

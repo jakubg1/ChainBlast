@@ -6,6 +6,7 @@ local Board = class:derive("Board")
 local Vec2 = require("src.Vector2")
 local Tile = require("src.Tile")
 local Chain = require("src.Chain")
+local Crate = require("src.Crate")
 
 
 
@@ -170,12 +171,24 @@ function Board:fill()
         for i = 1, 9 do
             self.tiles[i] = {}
             for j = 1, 9 do
-                --if i + j >= 7 and i + j <= 13 then
-                if self.layout[j][i] == 1 then
+                local tileID = self.layout[j][i]
+                if tileID > 0 then
                     local coords = Vec2(i, j)
                     local tile = Tile(self, coords:clone(), (i + j) * 0.12)
-                    local chain = Chain(self, coords:clone())
-                    tile:setObject(chain)
+                    local object = nil
+                    if tileID == 1 or tileID >= 4 then
+                        object = Chain(self, coords:clone())
+                    elseif tileID == 2 or tileID == 3 then
+                        object = Crate(self, coords:clone(), tileID - 1)
+                    end
+                    if tileID == 4 or tileID == 5 then
+                        tile.iceType = 1
+                        tile.iceLevel = tileID - 3
+                    elseif tileID == 6 then
+                        tile.iceType = 2
+                        tile.iceLevel = 3
+                    end
+                    tile:setObject(object)
                     self.tiles[i][j] = tile
                 end
             end
@@ -338,7 +351,14 @@ function Board:handleMatches()
             if tile.gold then
                 self.level:addToBombMeter(1)
             end
-            tile:makeGold()
+            tile:impact()
+            -- Remove all adjacent crates.
+            for k = 1, 4 do
+                local adjTile = self:getTile(coords + self.DIRECTIONS[k])
+                if adjTile and adjTile:getObjectType() == "crate" then
+                    adjTile:damageObject()
+                end
+            end
         end
         self.level:addCombo()
         local multiplier = (self.level.combo * (self.level.combo + 1)) / 2
@@ -363,7 +383,7 @@ function Board:fillHoles()
         for j = self.SIZE.y, 0, -1 do
             local coords = Vec2(i, j)
             local tile = self:getTile(coords)
-            if tile and tile:getObjectType() ~= "chain" then
+            if tile and not tile:getObject() then
                 for k = j - 1, 0, -1 do
                     local seekCoords = Vec2(i, k)
                     local seekTile = self:getTile(seekCoords)
@@ -388,7 +408,7 @@ function Board:fillHolesUp()
         for j = self.SIZE.y, 0, -1 do
             local coords = Vec2(i, j)
             local tile = self:getTile(coords)
-            if tile and tile:getObjectType() ~= "chain" then
+            if tile and not tile:getObject() then
                 local chain = Chain(self, Vec2(coords.x, -1 - tilesPlaced))
                 chain:fallTo(coords)
                 tile:setObject(chain)
@@ -405,12 +425,16 @@ function Board:explodeBomb(bombCoords)
         for j = -1, 1 do
             local coords = bombCoords + Vec2(i, j)
             local tile = self:getTile(coords)
-            if tile and tile:getObject() and not tile:getObject().shuffleTarget then
-                if tile:getChain() then
-                    tile:makeGold()
-                    self.level:addScore(100)
+            if tile then
+                tile:evaporateIce()
+                if tile:getObject() and not tile:getObject().shuffleTarget then
+                    if tile:getChain() then
+                        --local distance = math.abs(i) + math.abs(j)                    (3 - distance)
+                        tile:impact()
+                        self.level:addScore(100)
+                    end
+                    tile:destroyObject()
                 end
-                tile:destroyObject()
             end
         end
     end
@@ -489,14 +513,25 @@ end
 
 
 
-function Board:getRandomNonGoldTile()
+function Board:getRandomNonGoldTile(excludedCoords)
+    excludedCoords = excludedCoords or {}
+
     local tiles = {}
     for i = 1, self.SIZE.x do
         for j = 1, self.SIZE.y do
             local coords = Vec2(i, j)
-            local tile = self:getTile(coords)
-            if tile and not tile.gold then
-                table.insert(tiles, tile)
+            local excluded = false
+            for k, coordsE in ipairs(excludedCoords) do
+                if coords == coordsE then
+                    excluded = true
+                    break
+                end
+            end
+            if not excluded then
+                local tile = self:getTile(coords)
+                if tile and not tile.gold then
+                    table.insert(tiles, tile)
+                end
             end
         end
     end
@@ -525,14 +560,8 @@ end
 
 
 
-function Board:lose()
-    self.over = true
-    self:panicChains()
-end
-
-
-
 function Board:panicChains()
+    self.over = true
     for i = 1, self.SIZE.x do
         for j = 1, self.SIZE.y do
             local coords = Vec2(i, j)

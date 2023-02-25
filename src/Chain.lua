@@ -15,6 +15,8 @@ function Chain:new(board, coords)
     self.board = board
     self.coords = coords
 
+    self.tile = nil
+
     -- 1 = classic, 2 = cross
     self.shape = love.math.random() < 0.1 and 2 or 1
     -- 0 = rainbow
@@ -25,8 +27,6 @@ function Chain:new(board, coords)
     self.rotation = love.math.random(1, self.maxRotation)
     self.savedRotation = self.rotation -- This will be brought back if temporarily rotated.
     self.rotationAnim = nil
-
-    self.tile = nil
 
     self.fallTarget = nil
     self.fallSpeed = 0

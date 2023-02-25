@@ -10,9 +10,11 @@ function Sound:new(path, instances, isLooping)
     instances = instances or 4
     self.instances = {}
     for i = 1, instances do
-        self.instances[i] = love.audio.newSource(path, "static")
-        self.instances[i]:setLooping(isLooping or false)
+        self.instances[i] = {sound = love.audio.newSource(path, "static"), volume = 1}
+        self.instances[i].sound:setLooping(isLooping or false)
     end
+
+    self.volume = 1
 end
 
 
@@ -22,25 +24,35 @@ function Sound:play(volume, pitch)
     pitch = pitch or 1
     
     local instance = self:getFreeInstance()
-    instance:stop()
-    instance:setVolume(volume)
-    instance:setPitch(pitch)
-    instance:play()
+    instance.sound:stop()
+    instance.sound:setVolume(volume * self.volume)
+    instance.sound:setPitch(pitch)
+    instance.sound:play()
+    instance.volume = volume
 end
 
 
 
 function Sound:stop()
     for i, instance in ipairs(self.instances) do
-        instance:stop()
+        instance.sound:stop()
     end
+end
+
+
+
+function Sound:setVolume(volume)
+    for i, instance in ipairs(self.instances) do
+        instance.sound:setVolume(instance.volume * volume)
+    end
+    self.volume = volume
 end
 
 
 
 function Sound:getFreeInstance()
     for i, instance in ipairs(self.instances) do
-        if not instance:isPlaying() then
+        if not instance.sound:isPlaying() then
             return instance
         end
     end

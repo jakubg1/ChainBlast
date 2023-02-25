@@ -4,6 +4,7 @@ local Tile = class:derive("Tile")
 
 -- Place your imports here
 local Vec2 = require("src.Vector2")
+local IceShard = require "src.IceShard"
 
 
 
@@ -26,6 +27,8 @@ function Tile:new(board, coords, popDelay)
 
     self.gold = false
     self.goldAnimation = nil
+    self.iceLevel = 0
+    self.iceType = nil
     self.popAnimation = nil
     self.popOutDelay = nil
     self.popOutAnimation = nil
@@ -112,11 +115,46 @@ end
 
 
 
+function Tile:damageObject()
+    if self.object and not self.object.fallTarget then
+        self.object:damage()
+    end
+end
+
+
+
 function Tile:destroyObject()
     if self.object and not self.object.fallTarget then
         self.object:onDestroy()
         self.object = nil
     end
+end
+
+
+
+function Tile:damageIce()
+    if not self.iceType then
+        return
+    end
+    self.iceLevel = self.iceLevel - 1
+    if self.iceLevel == 0 then
+        self.iceType = nil
+        for i = 1, 10 do
+            table.insert(_Game.sparks, IceShard(self:getPos() + 7 + Vec2(love.math.randomNormal(2, 0), love.math.randomNormal(2, 0))))
+        end
+    end
+    for i = 1, 5 do
+        table.insert(_Game.sparks, IceShard(self:getPos() + 7 + Vec2(love.math.randomNormal(2, 0), love.math.randomNormal(2, 0))))
+    end
+    _Game.SOUNDS.iceBreak:play()
+end
+
+
+
+function Tile:evaporateIce()
+    -- Skip the effect, water evaporates!
+    self.iceLevel = 0
+    self.iceType = nil
 end
 
 
@@ -127,6 +165,16 @@ function Tile:makeGold()
     end
     self.gold = true
     self.goldAnimation = 0
+end
+
+
+
+function Tile:impact()
+    if self.iceType then
+        self:damageIce()
+    elseif not self.gold then
+        self:makeGold()
+    end
 end
 
 
@@ -208,6 +256,19 @@ end
 
 
 
+function Tile:getAlpha()
+    if self.popDelay or self.poppedOut then
+        return 0
+    elseif self.popAnimation then
+        return (self.popAnimation - 1) / 6
+    elseif self.popOutAnimation then
+        return (7 - self.popOutAnimation) / 6
+    end
+    return 1
+end
+
+
+
 function Tile:getSubsprite()
     --if self.popAnimation then
     --    return 9 + math.floor(self.popAnimation)
@@ -217,6 +278,11 @@ function Tile:getSubsprite()
             return 3 + math.floor(self.goldAnimation)
         end
         return 2
+    end
+    if self.iceType == 1 then
+        return 18 - self.iceLevel
+    elseif self.iceType == 2 then
+        return 21 - self.iceLevel
     end
     return 1
 end
@@ -237,13 +303,7 @@ function Tile:draw()
     --        pos = pos - Vec2(1)
     --    end
     --end
-    local alpha = 1
-    if self.popAnimation then
-        alpha = (self.popAnimation - 1) / 6
-    elseif self.popOutAnimation then
-        alpha = (7 - self.popOutAnimation) / 6
-    end
-    _Display:drawSprite(_Game.SPRITES.tiles, subsprite, pos, nil, alpha)
+    _Display:drawSprite(_Game.SPRITES.tiles, subsprite, pos, nil, self:getAlpha())
 
     if self:isSelected() then
         _Display:drawRect(self:getPos(), Vec2(14), true, {1, 1, 1}, 0.4)

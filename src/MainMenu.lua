@@ -35,7 +35,9 @@ end
 
 
 function MainMenu:update(dt)
+    local selectedOptionOld = self.selectedOption
     self.selectedOption = nil
+
     if self.screenTransition then
         self.screenTransition = self.screenTransition + dt
         if self.screenTransition >= 0.6 then
@@ -52,6 +54,9 @@ function MainMenu:update(dt)
         for i, option in ipairs(self.options) do
             if _MousePos.x >= 60 and _MousePos.x <= 140 and _MousePos.y >= self.optionsY + i * 10 and _MousePos.y < self.optionsY + (i + 1) * 10 then
                 self.selectedOption = i
+                if selectedOptionOld ~= i then
+                    _Game.SOUNDS.uiHover:play()
+                end
                 break
             end
         end
@@ -98,12 +103,20 @@ function MainMenu:initScreen(screen)
         self.optionsY = 60
     elseif screen == "settings" then
         self.optionsHeader = "Settings"
-        self.options = {"No settings yet...", "Go Back"}
+        self.options = {
+            "Sound Volume: " .. self:getBars(_Game.settings.soundVolume),
+            "Music Volume: " .. self:getBars(_Game.settings.musicVolume),
+            "Go Back"
+        }
         self.optionsY = 60
     elseif screen == "credits" then
         self.optionsHeader = nil
-        self.options = {"Back"}
-        self.optionsY = 120
+        self.options = {"Special Thanks", "Back to Menu"}
+        self.optionsY = 110
+    elseif screen == "credits2" then
+        self.optionsHeader = nil
+        self.options = {"Credits", "Back to Menu"}
+        self.optionsY = 110
     elseif screen == "_game" then
         self.fadeTime = 0
     elseif screen == "_quit" then
@@ -116,6 +129,16 @@ end
 function MainMenu:transitionTo(screen)
     self.screenTransition = 0
     self.screenTransitionTarget = screen
+end
+
+
+
+function MainMenu:getBars(value)
+    local text = ""
+    for i = 1, 10 do
+        text = text .. ((value - 0.005 > 1 - i / 10) and "|" or ".")
+    end
+    return string.format(text .. " %d%%", value * 100)
 end
 
 
@@ -144,10 +167,18 @@ function MainMenu:draw()
         local color = (i == self.selectedOption) and {1, 1, 1} or {0.8, 0.8, 0.8}
         _Display:drawText(option, Vec2(100, self.optionsY + i * 10), Vec2(0.5, 0), nil, color)
     end
-    local xSeparation = self.cursorAnimH * self.cursorAnimH * 320
+
+    local xWidthPrev = 0
+    local xWidthNext = 0
+    if self.cursorAnim >= 1 and self.cursorAnim <= #self.options then
+        xWidthPrev = _Display:getTextSize(self.options[math.floor(self.cursorAnim)]).x * (1 - self.cursorAnim % 1)
+        xWidthNext = _Display:getTextSize(self.options[math.ceil(self.cursorAnim)]).x * (self.cursorAnim % 1)
+    end
+    local xWidth = math.max((xWidthPrev + xWidthNext) / 2 - 20, 0)
+    local xSeparation = math.max(self.cursorAnimH * self.cursorAnimH * 320, xWidth)
     local color = _GetRainbowColor(_Time / 4)
-    _Display:drawText(">", Vec2(70 + math.sin(_Time * math.pi) * 4 - xSeparation, self.optionsY + self.cursorAnim * 10), Vec2(1, 0), nil, color)
-    _Display:drawText("<", Vec2(130 - math.sin(_Time * math.pi) * 4 + xSeparation, self.optionsY + self.cursorAnim * 10), Vec2(0, 0), nil, color)
+    _Display:drawText(">", Vec2(70 + math.sin(_Time * math.pi) * 4 - xSeparation, self.optionsY + self.cursorAnim * 10 + 0.5), Vec2(1, 0), nil, color)
+    _Display:drawText("<", Vec2(130 - math.sin(_Time * math.pi) * 4 + xSeparation, self.optionsY + self.cursorAnim * 10 + 0.5), Vec2(0, 0), nil, color)
 
     _Display:drawText("LOVE Jam Demo", Vec2(2, 150), Vec2(0, 1))
 
@@ -156,12 +187,20 @@ function MainMenu:draw()
     end
 
     if self.screen == "credits" then
-        _Display:drawText("Made with <3", Vec2(100, 50), Vec2(0.5))
-        _Display:drawText("For the LOVE Jam 2023!", Vec2(100, 60), Vec2(0.5))
-        _Display:drawText("Music by @Crisps", Vec2(100, 80), Vec2(0.5))
-        _Display:drawText("Copyright (C) 2023 jakubg1", Vec2(100, 100), Vec2(0.5))
-        _Display:drawText("All assets and code are licensed", Vec2(100, 110), Vec2(0.5))
-        _Display:drawText("under MIT License.", Vec2(100, 120), Vec2(0.5))
+        _Display:drawText("Made with <3", Vec2(100, 45), Vec2(0.5))
+        _Display:drawText("For the LOVE Jam 2023!", Vec2(100, 55), Vec2(0.5))
+        _Display:drawText("Music by @Crisps", Vec2(100, 70), Vec2(0.5))
+        _Display:drawText("Copyright (C) 2023 jakubg1", Vec2(100, 80), Vec2(0.5))
+        _Display:drawText("All assets (besides music) and code", Vec2(100, 90), Vec2(0.5))
+        _Display:drawText("are licensed under MIT License.", Vec2(100, 100), Vec2(0.5))
+        _Display:drawText("More info in README.txt", Vec2(100, 110), Vec2(0.5))
+    elseif self.screen == "credits2" then
+        _Display:drawText("Special Thanks", Vec2(100, 45), Vec2(0.5))
+        _Display:drawText("- MumboJumbo for making Chainz,", Vec2(100, 60), Vec2(0.5))
+        _Display:drawText("the game which I took inspiration from!", Vec2(100, 70), Vec2(0.5))
+        _Display:drawText("- @increpare for making BFXR!", Vec2(100, 85), Vec2(0.5))
+        _Display:drawText("- LOVE2D authors and community!", Vec2(100, 95), Vec2(0.5))
+        _Display:drawText("esp. @Aidan, @softmagic, @Maiori.iso & others", Vec2(100, 105), Vec2(0.5))
     end
 
     --local alpha = 0.5 + (_Time % 2) * 0.5
@@ -190,12 +229,41 @@ function MainMenu:mousepressed(x, y, button)
                 self:transitionTo("_quit")
             end
         elseif self.screen == "settings" then
-            if self.selectedOption == 2 then
+            if self.selectedOption == 1 then
+                _Game.settings:increaseSoundVolume()
+                self:initScreen("settings")
+            elseif self.selectedOption == 2 then
+                _Game.settings:increaseMusicVolume()
+                self:initScreen("settings")
+            elseif self.selectedOption == 3 then
                 self:transitionTo("main")
             end
         elseif self.screen == "credits" then
             if self.selectedOption == 1 then
+                self:transitionTo("credits2")
+            elseif self.selectedOption == 2 then
                 self:transitionTo("main")
+            end
+        elseif self.screen == "credits2" then
+            if self.selectedOption == 1 then
+                self:transitionTo("credits")
+            elseif self.selectedOption == 2 then
+                self:transitionTo("main")
+            end
+        end
+        if self.selectedOption then
+            _Game.SOUNDS.uiSelect:play()
+        end
+    elseif button == 2 then
+        if self.screen == "settings" then
+            if self.selectedOption == 1 then
+                _Game.settings:decreaseSoundVolume()
+                self:initScreen("settings")
+                _Game.SOUNDS.uiSelect:play()
+            elseif self.selectedOption == 2 then
+                _Game.settings:decreaseMusicVolume()
+                self:initScreen("settings")
+                _Game.SOUNDS.uiSelect:play()
             end
         end
     end

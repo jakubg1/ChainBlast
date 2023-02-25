@@ -24,9 +24,11 @@ end
 
 
 
-function Display:drawLine(pos1, pos2, color, alpha)
+function Display:drawLine(pos1, pos2, color, alpha, width)
     color = color or {1, 1, 1}
+    width = width or 1
     love.graphics.setColor(color[1], color[2], color[3], alpha)
+    love.graphics.setLineWidth(width)
     love.graphics.line(pos1.x + 0.5, pos1.y + 0.5, pos2.x + 0.5, pos2.y + 0.5)
 end
 

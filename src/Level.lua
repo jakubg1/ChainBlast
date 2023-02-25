@@ -22,6 +22,7 @@ function Level:new(number, data)
     self.combo = 0
     self.bombMeter = 0
     self.bombMeterTime = nil
+    self.bombMeterCoords = {}
     self.lost = false
 
     self.timeElapsed = 0
@@ -33,6 +34,8 @@ function Level:new(number, data)
     self.loseAnimation = nil
     self.loseAnimationBoardNuked = false
     self.resultsAnimation = nil
+    self.resultsAnimationSoundStep = 1
+    self.RESULTS_ANIMATION_SOUND_STEPS = {1.2, 1.6, 2, 2.4, 2.8, 3.8}
     self.hudAlpha = 0
     self.hudComboAlpha = 0
     self.hudComboValue = 0
@@ -88,13 +91,15 @@ function Level:update(dt)
         local n = math.floor(self.bombMeterTime / 0.5)
         self.bombMeterTime = self.bombMeterTime + dt
         if n ~= math.floor(self.bombMeterTime / 0.5) and n < 3 then
-            local tile = self.board:getRandomNonGoldTile()
+            local tile = self.board:getRandomNonGoldTile(self.bombMeterCoords)
             if tile then
                 self:spawnBomb(tile.coords)
+                table.insert(self.bombMeterCoords, tile.coords)
             end
         end
         if self.bombMeterTime >= 1.5 and #self.bombs == 0 then
             self.bombMeterTime = nil
+            self.bombMeterCoords = {}
         end
     end
 
@@ -133,6 +138,11 @@ function Level:update(dt)
     if self.resultsAnimation then
         self.resultsAnimation = self.resultsAnimation + dt
         self.hudAlpha = math.max(1 - self.resultsAnimation * 2, 0)
+        local threshold = self.RESULTS_ANIMATION_SOUND_STEPS[self.resultsAnimationSoundStep]
+        if threshold and self.resultsAnimation >= threshold then
+            _Game.SOUNDS.uiStats:play()
+            self.resultsAnimationSoundStep = self.resultsAnimationSoundStep + 1
+        end
     end
 
     if self.combo >= 2 then
@@ -210,13 +220,14 @@ end
 
 function Level:win()
     self.winAnimation = 0
+    _Game.SOUNDS.levelWin:play()
 end
 
 
 
 function Level:lose()
     self.lost = true
-    self.board:lose()
+    self.board:panicChains()
     _Game.lives = _Game.lives - 1
 
     self.loseAnimation = 0
@@ -228,8 +239,14 @@ end
 function Level:onBoardEnd()
     self.board = nil
     self.bombMeterTime = nil
-    self:addScore(math.ceil(self.time * 10) * 100)
+    self:addScore(self:getTimeBonus())
     self.resultsAnimation = 0
+end
+
+
+
+function Level:getTimeBonus()
+    return math.ceil(self.time * 10) * 30
 end
 
 
@@ -346,7 +363,7 @@ function Level:draw()
         if self.resultsAnimation > 2.5 then
             local text = "No Bonus!"
             if not self.lost then
-                text = string.format("%.1fs = %s", self.time, math.ceil(self.time * 10) * 100)
+                text = string.format("%.1fs = %s", self.time, self:getTimeBonus())
             end
             _Display:drawText(text, Vec2(180, 70), Vec2(1, 0.5), nil, {1, 1, 0})
         end
@@ -388,6 +405,7 @@ function Level:mousepressed(x, y, button)
             _Game:advanceLevel()
         end
         _Game:startLevel()
+        _Game.SOUNDS.uiSelect:play()
     end
 end
 
