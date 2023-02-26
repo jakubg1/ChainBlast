@@ -7,6 +7,8 @@ local Settings = class:derive("Settings")
 
 
 function Settings:new()
+    self.PATH = "settings.txt"
+
     self.musicVolume = 1
     self.soundVolume = 1
 end
@@ -41,6 +43,27 @@ function Settings:apply()
     for soundN, sound in pairs(_Game.SOUNDS) do
         sound:setVolume(self.soundVolume)
     end
+end
+
+
+
+function Settings:load()
+    local success, contents = pcall(function() return _LoadJson(self.PATH) end)
+    if success and contents then
+        self.musicVolume = contents.musicVolume
+        self.soundVolume = contents.soundVolume
+    end
+    self:apply()
+end
+
+
+
+function Settings:save()
+    local t = {
+        musicVolume = self.musicVolume,
+        soundVolume = self.soundVolume
+    }
+    _SaveJson(self.PATH, t)
 end
 
 

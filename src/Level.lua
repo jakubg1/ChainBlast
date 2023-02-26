@@ -20,10 +20,13 @@ function Level:new(number, data)
     self.time = data.time
     self.timeCounting = false
     self.combo = 0
+    self.lost = false
+    self.pause = false
+    self.pauseAnimation = 0
+
     self.bombMeter = 0
     self.bombMeterTime = nil
     self.bombMeterCoords = {}
-    self.lost = false
 
     self.timeElapsed = 0
     self.maxCombo = 0
@@ -36,6 +39,12 @@ function Level:new(number, data)
     self.resultsAnimation = nil
     self.resultsAnimationSoundStep = 1
     self.RESULTS_ANIMATION_SOUND_STEPS = {1.2, 1.6, 2, 2.4, 2.8, 3.8}
+    self.gameOverAnimation = nil
+    self.gameOverHeSaid = false
+    self.gameResultsAnimation = nil
+    self.gameResultsAnimationSoundStep = 1
+    self.GAME_RESULTS_ANIMATION_SOUND_STEPS = {1.2, 1.6, 2, 2.4, 2.8, 3.8}
+
     self.hudAlpha = 0
     self.hudComboAlpha = 0
     self.hudComboValue = 0
@@ -49,23 +58,68 @@ end
 
 
 function Level:update(dt)
-    if self.board then
-        self.board:update(dt)
-        -- The board can delete itself on its update!
-        if self:isTimerTicking() then
-            self.time = self.time - dt
-            if self.time < 10 and math.floor(self.time) ~= math.floor(self.time + dt) then
-                _Game.SOUNDS.clock:play()
-            end
-            if self.time <= 0 then
-                self.time = 0
-                if not self.bombMeterTime then
-                    self:lose()
+    if self.pause then
+        self.pauseAnimation = math.min(self.pauseAnimation + dt, 1)
+    elseif self.pauseAnimation > 0 then
+        self.pauseAnimation = math.max(self.pauseAnimation - dt, 0)
+    else
+        if self.board then
+            self.board:update(dt)
+            -- The board can delete itself on its update!
+            if self:isTimerTicking() then
+                self.time = self.time - dt
+                if self.time < 10 and math.floor(self.time) ~= math.floor(self.time + dt) then
+                    _Game.SOUNDS.clock:play()
+                end
+                if self.time <= 0 then
+                    self.time = 0
+                    if not self.bombMeterTime then
+                        self:lose()
+                    end
                 end
             end
+            if self.board and not self.board.startAnimation and not self.board.endAnimation then
+                self.timeElapsed = self.timeElapsed + dt
+            end
         end
-        if self.board and not self.board.startAnimation and not self.board.endAnimation then
-            self.timeElapsed = self.timeElapsed + dt
+
+        for i = #self.bombs, 1, -1 do
+            local bomb = self.bombs[i]
+            bomb:update(dt)
+            if bomb:canDespawn() then
+                table.remove(self.bombs, i)
+            end
+        end
+
+        if self.bombMeterTime and self.board.shufflingChainCount == 0 then
+            local n = math.floor(self.bombMeterTime / 0.5)
+            self.bombMeterTime = self.bombMeterTime + dt
+            if n ~= math.floor(self.bombMeterTime / 0.5) and n < 3 then
+                local tile = self.board:getRandomNonGoldTile(self.bombMeterCoords)
+                if tile then
+                    self:spawnBomb(tile.coords)
+                    table.insert(self.bombMeterCoords, tile.coords)
+                end
+            end
+            if self.bombMeterTime >= 1.5 and #self.bombs == 0 then
+                self.bombMeterTime = nil
+                self.bombMeterCoords = {}
+            end
+        end
+
+        if self.combo >= 2 then
+            self.hudComboAlpha = 1
+            self.hudComboValue = self.combo
+        else
+            self.hudComboAlpha = math.max(self.hudComboAlpha - dt, 0)
+        end
+
+        if self.hudExtraTimeAlpha > 0 then
+            self.hudExtraTimeAlpha = self.hudExtraTimeAlpha - dt
+            if self.hudExtraTimeAlpha <= 0 then
+                self.hudExtraTimeAlpha = 0
+                self.hudExtraTimeValue = 0
+            end
         end
     end
 
@@ -77,30 +131,6 @@ function Level:update(dt)
     if self.clockAlarm and (self.time > 5 or not self:isTimerTicking()) then
         self.clockAlarm = false
         _Game.SOUNDS.clockAlarm:stop()
-    end
-
-    for i = #self.bombs, 1, -1 do
-        local bomb = self.bombs[i]
-        bomb:update(dt)
-        if bomb:canDespawn() then
-            table.remove(self.bombs, i)
-        end
-    end
-
-    if self.bombMeterTime and self.board.shufflingChainCount == 0 then
-        local n = math.floor(self.bombMeterTime / 0.5)
-        self.bombMeterTime = self.bombMeterTime + dt
-        if n ~= math.floor(self.bombMeterTime / 0.5) and n < 3 then
-            local tile = self.board:getRandomNonGoldTile(self.bombMeterCoords)
-            if tile then
-                self:spawnBomb(tile.coords)
-                table.insert(self.bombMeterCoords, tile.coords)
-            end
-        end
-        if self.bombMeterTime >= 1.5 and #self.bombs == 0 then
-            self.bombMeterTime = nil
-            self.bombMeterCoords = {}
-        end
     end
 
     if self.startAnimation then
@@ -128,8 +158,15 @@ function Level:update(dt)
         if self.loseAnimation >= 1 and not self.loseAnimationBoardNuked then
             self.loseAnimationBoardNuked = true
             self.board:nukeEverything()
-        end
-        if self.loseAnimation >= 12.5 then
+            if _Game.lives == 0 then
+                self.loseAnimation = nil
+                self.board = nil
+                self.bombMeterTime = nil
+                _Game.sparks = {}
+                _Game.explosions = {}
+                self.gameOverAnimation = 0
+            end
+        elseif self.loseAnimation >= 12.5 then
             self.loseAnimation = nil
             self.board:launchEndAnimation()
         end
@@ -145,18 +182,25 @@ function Level:update(dt)
         end
     end
 
-    if self.combo >= 2 then
-        self.hudComboAlpha = 1
-        self.hudComboValue = self.combo
-    else
-        self.hudComboAlpha = math.max(self.hudComboAlpha - dt, 0)
+    if self.gameOverAnimation then
+        self.gameOverAnimation = self.gameOverAnimation + dt
+        self.hudAlpha = 0
+        if not self.gameOverHeSaid and self.gameOverAnimation >= 5 then
+            _Game.SOUNDS.gameOver:play()
+            self.gameOverHeSaid = true
+        end
+        if self.gameOverAnimation >= 19 then
+            self.gameOverAnimation = nil
+            self.resultsAnimation = 0.5
+        end
     end
 
-    if self.hudExtraTimeAlpha > 0 then
-        self.hudExtraTimeAlpha = self.hudExtraTimeAlpha - dt
-        if self.hudExtraTimeAlpha <= 0 then
-            self.hudExtraTimeAlpha = 0
-            self.hudExtraTimeValue = 0
+    if self.gameResultsAnimation then
+        self.gameResultsAnimation = self.gameResultsAnimation + dt
+        local threshold = self.GAME_RESULTS_ANIMATION_SOUND_STEPS[self.gameResultsAnimationSoundStep]
+        if threshold and self.gameResultsAnimation >= threshold then
+            _Game.SOUNDS.uiStats:play()
+            self.gameResultsAnimationSoundStep = self.gameResultsAnimationSoundStep + 1
         end
     end
 end
@@ -185,7 +229,22 @@ end
 
 
 function Level:isTimerTicking()
-    return self.board and self.board.playerControl and self.timeCounting
+    return self.board and self.board.playerControl and self.timeCounting and self.pauseAnimation == 0
+end
+
+
+
+function Level:canPause()
+    return not (self.startAnimation or self.winAnimation or self.loseAnimation or self.resultsAnimation or self.gameOverAnimation or self.gameResultsAnimation)
+end
+
+
+
+function Level:togglePause()
+    self.pause = not self.pause
+    if not self:canPause() then
+        self.pause = false
+    end
 end
 
 
@@ -199,7 +258,7 @@ end
 
 function Level:addToBombMeter(amount)
     -- Cooldown before next bombs
-    if self.bombMeterTime then
+    if self.bombMeterTime or self.lost then
         return
     end
     self.bombMeter = self.bombMeter + amount
@@ -256,13 +315,36 @@ function Level:draw()
         self.board:draw()
     end
 
+    if self.pauseAnimation > 0 then
+        _Display:drawRect(Vec2(57, 0), Vec2(143, 150), true, {0, 0, 0}, self.pauseAnimation)
+        _Display:drawText(string.format("Game Paused", self.number), Vec2(128, 70), Vec2(0.5), nil, {1, 1, 0}, self.pauseAnimation)
+        local alpha = 0.5 + (_Time % 2) * 0.5
+        if _Time % 2 > 1 then
+            alpha = 1 + (1 - _Time % 2) * 0.5
+        end
+        _Display:drawText(string.format("Click to continue", self.number), Vec2(128, 80), Vec2(0.5), nil, nil, self.pauseAnimation * alpha)
+    end
+
     if self.startAnimation then
         local alpha = math.min(self.startAnimation, 1)
         if self.startAnimation >= 6.5 then
             alpha = math.min(7.5 - self.startAnimation, 1)
         end
-        _Display:drawText(string.format("Level %s", self.number), Vec2(101, 76), Vec2(0.5), nil, {0, 0, 0}, alpha * 0.5)
-        _Display:drawText(string.format("Level %s", self.number), Vec2(100, 75), Vec2(0.5), nil, nil, alpha)
+        if _Game.lives == 1 then
+            _Display:drawText(string.format("Level %s", self.number), Vec2(101, 66), Vec2(0.5), nil, {0, 0, 0}, alpha * 0.5)
+            _Display:drawText(string.format("Level %s", self.number), Vec2(100, 65), Vec2(0.5), nil, nil, alpha)
+            alpha = math.max(math.min(self.startAnimation - 1.5, 1))
+            if self.startAnimation >= 6.5 then
+                alpha = math.min(7.5 - self.startAnimation, 1)
+            end
+            _Display:drawText(string.format("This is your last chance!", self.number), Vec2(101, 76), Vec2(0.5), nil, {0, 0, 0}, alpha * 0.5)
+            _Display:drawText(string.format("This is your last chance!", self.number), Vec2(100, 75), Vec2(0.5), nil, {1, 0, 0}, alpha)
+            _Display:drawText(string.format("Don't screw up!", self.number), Vec2(101, 86), Vec2(0.5), nil, {0, 0, 0}, alpha * 0.5)
+            _Display:drawText(string.format("Don't screw up!", self.number), Vec2(100, 85), Vec2(0.5), nil, {1, 0, 0}, alpha)
+        else
+            _Display:drawText(string.format("Level %s", self.number), Vec2(101, 76), Vec2(0.5), nil, {0, 0, 0}, alpha * 0.5)
+            _Display:drawText(string.format("Level %s", self.number), Vec2(100, 75), Vec2(0.5), nil, nil, alpha)
+        end
     end
 
     if self.hudAlpha > 0 then
@@ -382,12 +464,73 @@ function Level:draw()
         if self.resultsAnimation > 4.5 then
             local text = "Click anywhere to start next level!"
             if self.lost then
-                text = "Click anywhere to try again!"
+                if _Game.lives > 0 then
+                    text = "Click anywhere to try again!"
+                else
+                    text = "Click anywhere to continue!"
+                end
             end
             --local alpha = (math.sin((self.resultsAnimation - 4.5) * math.pi) + 2) / 3
             local alpha = 0.5 + (self.resultsAnimation % 2) * 0.5
             if self.resultsAnimation % 2 > 1 then
                 alpha = 1 + (1 - self.resultsAnimation % 2) * 0.5
+            end
+            _Display:drawText(text, Vec2(100, 130), Vec2(0.5), nil, nil, alpha)
+        end
+    end
+
+    if self.gameOverAnimation then
+        if self.gameOverAnimation > 5 then
+            local alpha = math.min((17 - self.gameOverAnimation) / 4, 1)
+            _Display:drawText("GAME", Vec2(100, 75), Vec2(0.5, 1), nil, {1, 0, 0}, alpha, 5)
+            _Display:drawText("OVER", Vec2(100, 75), Vec2(0.5, 0), nil, {1, 0, 0}, alpha, 5)
+        end
+    end
+
+    if self.gameResultsAnimation then
+        local alpha = math.min(math.max((self.gameResultsAnimation - 0.5) * 2, 0), 1)
+        _Display:drawText(string.format("Game Results", self.number), Vec2(100, 10), Vec2(0.5), nil, nil, alpha)
+        if self.gameResultsAnimation > 1.2 then
+            _Display:drawText("Chains Destroyed:", Vec2(20, 30), Vec2(0, 0.5))
+        end
+        if self.gameResultsAnimation > 1.3 then
+            _Display:drawText(tostring(_Game.chainsDestroyed), Vec2(180, 30), Vec2(1, 0.5), nil, {1, 1, 0})
+        end
+        if self.gameResultsAnimation > 1.6 then
+            _Display:drawText("Largest Link:", Vec2(20, 40), Vec2(0, 0.5))
+        end
+        if self.gameResultsAnimation > 1.7 then
+            _Display:drawText(tostring(_Game.largestGroup), Vec2(180, 40), Vec2(1, 0.5), nil, {1, 1, 0})
+        end
+        if self.gameResultsAnimation > 2 then
+            _Display:drawText("Max Combo:", Vec2(20, 50), Vec2(0, 0.5))
+        end
+        if self.gameResultsAnimation > 2.1 then
+            _Display:drawText(tostring(_Game.maxCombo), Vec2(180, 50), Vec2(1, 0.5), nil, {1, 1, 0})
+        end
+        if self.gameResultsAnimation > 2.4 then
+            _Display:drawText("Attempts per Level:", Vec2(20, 60), Vec2(0, 0.5))
+        end
+        if self.gameResultsAnimation > 2.5 then
+            _Display:drawText(string.format("%s / %s = %.2f", _Game.levelsStarted, _Game.levelsBeaten + 1, _Game.levelsStarted / (_Game.levelsBeaten + 1)), Vec2(180, 60), Vec2(1, 0.5), nil, {1, 1, 0})
+        end
+        if self.gameResultsAnimation > 2.8 then
+            _Display:drawText("Total Time:", Vec2(20, 70), Vec2(0, 0.5))
+        end
+        if self.gameResultsAnimation > 2.9 then
+            _Display:drawText(string.format("%.1d:%.2d", _Game.timeElapsed / 60, _Game.timeElapsed % 60), Vec2(180, 70), Vec2(1, 0.5), nil, {1, 1, 0})
+        end
+        if self.gameResultsAnimation > 3.4 then
+            _Display:drawText("Final Score:", Vec2(100, 90), Vec2(0.5))
+        end
+        if self.gameResultsAnimation > 3.8 then
+            _Display:drawText(tostring(_Game.score), Vec2(100, 105), Vec2(0.5), nil, _GetRainbowColor(_Time / 4), nil, 2)
+        end
+        if self.gameResultsAnimation > 4.5 then
+            local text = "Click anywhere to go to main menu!"
+            local alpha = 0.5 + (self.gameResultsAnimation % 2) * 0.5
+            if self.gameResultsAnimation % 2 > 1 then
+                alpha = 1 + (1 - self.gameResultsAnimation % 2) * 0.5
             end
             _Display:drawText(text, Vec2(100, 130), Vec2(0.5), nil, nil, alpha)
         end
@@ -400,12 +543,29 @@ function Level:mousepressed(x, y, button)
     if self.board then
         self.board:mousepressed(x, y, button)
     end
-    if button == 1 and self.resultsAnimation and self.resultsAnimation > 4.5 then
-        if not self.lost then
-            _Game:advanceLevel()
+    if button == 1 then
+        if self.pause then
+            self:togglePause()
         end
-        _Game:startLevel()
-        _Game.SOUNDS.uiSelect:play()
+        if self.resultsAnimation and self.resultsAnimation > 4.5 then
+            _Game.largestGroup = math.max(_Game.largestGroup, self.largestGroup)
+            _Game.maxCombo = math.max(_Game.maxCombo, self.maxCombo)
+            _Game.timeElapsed = _Game.timeElapsed + self.timeElapsed
+            if _Game.lives == 0 then
+                self.resultsAnimation = nil
+                self.gameResultsAnimation = 0
+            else
+                if not self.lost then
+                    _Game:advanceLevel()
+                end
+                _Game:startLevel()
+            end
+            _Game.SOUNDS.uiSelect:play()
+        elseif self.gameResultsAnimation and self.gameResultsAnimation > 4.5 then
+            _Game:endGame()
+            _Game:backToMain()
+            _Game.SOUNDS.uiSelect:play()
+        end
     end
 end
 
@@ -414,6 +574,22 @@ end
 function Level:mousereleased(x, y, button)
     if self.board then
         self.board:mousereleased(x, y, button)
+    end
+end
+
+
+
+function Level:keypressed(key)
+    if key == "space" then
+        self:togglePause()
+    end
+end
+
+
+
+function Level:focus(focus)
+    if not focus and not self.pause then
+        self:togglePause()
     end
 end
 

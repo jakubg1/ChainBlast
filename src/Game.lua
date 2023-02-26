@@ -311,6 +311,7 @@ function Game:new()
     self.FONTS = {
         standard = love.graphics.newImageFont("assets/fonts/standard.png", " abcdefghijklmnopqrstuvwxyząćęłńóśźżABCDEFGHIJKLMNOPQRSTUVWXYZĄĆĘŁŃÓŚŹŻ0123456789<>-+()[]_.,:;'!?@#$€%^&*\"/|\\", 1)
     }
+    self.FONTS.standard:setFilter("nearest", "nearest")
 
     self.SOUNDS = {
         boardStart = Sound("assets/sounds/board_start.wav", 1),
@@ -319,12 +320,14 @@ function Game:new()
         clock = Sound("assets/sounds/clock1.wav", 1),
         clockAlarm = Sound("assets/sounds/clock1.wav", 1, true),
         chainDestroy = Sound("assets/sounds/chain_destroy.wav"),
+        chainDestroyBig = Sound("assets/sounds/chain_destroy_big.wav"),
         chainLand = Sound("assets/sounds/chain_land.wav"),
         chainRotate = Sound("assets/sounds/chain_rotate.wav"),
         combo = Sound("assets/sounds/combo.wav"),
         crateDestroy = Sound("assets/sounds/crate_destroy.wav"),
         explosion = Sound("assets/sounds/explosion.wav", 1),
         explosion2 = Sound("assets/sounds/explosion2.wav"),
+        gameOver = Sound("assets/sounds/game_over_T.wav", 1),
         iceBreak = Sound("assets/sounds/ice_break.wav"),
         levelLose = Sound("assets/sounds/level_lose_T.wav", 1),
         levelStart = Sound("assets/sounds/level_start_T.wav", 1),
@@ -340,21 +343,9 @@ function Game:new()
     -- 2: box
     -- 3: double box
     -- 4-6: ice (levels 1-3)
+    -- 7: special - box+lv2 ice
+    -- 8: special - 2xbox+lv3 ice
     self.LEVELS = {
-        { -- Level 5
-            time = 40,
-            layout = {
-                {0, 0, 0, 0, 0, 0, 0, 0, 0},
-                {0, 4, 4, 4, 4, 4, 4, 4, 0},
-                {0, 4, 4, 4, 4, 4, 4, 4, 0},
-                {0, 4, 4, 5, 5, 5, 4, 4, 0},
-                {0, 4, 4, 5, 5, 5, 4, 4, 0},
-                {0, 4, 4, 5, 5, 5, 4, 4, 0},
-                {0, 4, 4, 4, 4, 4, 4, 4, 0},
-                {0, 4, 4, 4, 4, 4, 4, 4, 0},
-                {0, 0, 0, 0, 0, 0, 0, 0, 0}
-            }
-        },
         { -- Level 1
             time = 60,
             layout = {
@@ -370,7 +361,7 @@ function Game:new()
             }
         },
         { -- Level 2
-            time = 30,
+            time = 40,
             layout = {
                 {1, 0, 1, 0, 1, 0, 1, 0, 1},
                 {1, 0, 1, 0, 1, 0, 1, 0, 1},
@@ -398,7 +389,7 @@ function Game:new()
             }
         },
         { -- Level 4
-            time = 70,
+            time = 40,
             layout = {
                 {1, 1, 1, 1, 1, 1, 1, 1, 1},
                 {1, 1, 1, 1, 1, 1, 1, 1, 1},
@@ -411,8 +402,64 @@ function Game:new()
                 {2, 2, 2, 2, 2, 2, 2, 2, 2}
             }
         },
+        { -- Level 5
+            time = 40,
+            layout = {
+                {0, 0, 0, 0, 0, 0, 0, 0, 0},
+                {0, 4, 4, 4, 4, 4, 4, 4, 0},
+                {0, 4, 4, 4, 4, 4, 4, 4, 0},
+                {0, 4, 4, 5, 5, 5, 4, 4, 0},
+                {0, 4, 4, 5, 5, 5, 4, 4, 0},
+                {0, 4, 4, 5, 5, 5, 4, 4, 0},
+                {0, 4, 4, 4, 4, 4, 4, 4, 0},
+                {0, 4, 4, 4, 4, 4, 4, 4, 0},
+                {0, 0, 0, 0, 0, 0, 0, 0, 0}
+            }
+        },
+        { -- Level 6
+            time = 40,
+            layout = {
+                {7, 7, 7, 7, 7, 7, 7, 7, 7},
+                {7, 7, 7, 7, 7, 7, 7, 7, 7},
+                {7, 7, 7, 7, 7, 7, 7, 7, 7},
+                {7, 7, 7, 5, 5, 5, 7, 7, 7},
+                {7, 7, 7, 5, 5, 5, 7, 7, 7},
+                {7, 7, 7, 5, 5, 5, 7, 7, 7},
+                {7, 7, 7, 7, 7, 7, 7, 7, 7},
+                {7, 7, 7, 7, 7, 7, 7, 7, 7},
+                {7, 7, 7, 7, 7, 7, 7, 7, 7}
+            }
+        },
+        { -- Level 7
+            time = 40,
+            layout = {
+                {3, 3, 3, 3, 3, 3, 1, 1, 1},
+                {3, 3, 3, 3, 3, 1, 1, 1, 1},
+                {3, 3, 3, 3, 1, 1, 1, 1, 1},
+                {3, 3, 3, 1, 1, 1, 1, 1, 3},
+                {3, 3, 1, 1, 1, 1, 1, 3, 3},
+                {3, 1, 1, 1, 1, 1, 3, 3, 3},
+                {1, 1, 1, 1, 1, 3, 3, 3, 3},
+                {1, 1, 1, 1, 3, 3, 3, 3, 3},
+                {1, 1, 1, 3, 3, 3, 3, 3, 3}
+            }
+        },
         { -- Level 8
             time = 45,
+            layout = {
+                {0, 0, 0, 0, 0, 0, 0, 0, 0},
+                {5, 5, 5, 7, 7, 7, 7, 7, 7},
+                {0, 0, 0, 0, 0, 0, 0, 0, 0},
+                {5, 5, 5, 7, 7, 7, 7, 7, 7},
+                {0, 0, 0, 0, 0, 0, 0, 0, 0},
+                {5, 5, 5, 7, 7, 7, 7, 7, 7},
+                {0, 0, 0, 0, 0, 0, 0, 0, 0},
+                {5, 5, 5, 7, 7, 7, 7, 7, 7},
+                {0, 0, 0, 0, 0, 0, 0, 0, 0}
+            }
+        },
+        { -- Level 9
+            time = 25,
             layout = {
                 {5, 5, 5, 5, 5, 5, 5, 5, 5},
                 {5, 5, 5, 5, 5, 5, 5, 5, 5},
@@ -425,18 +472,18 @@ function Game:new()
                 {0, 0, 1, 0, 1, 0, 1, 0, 0}
             }
         },
-        { -- Level 7
-            time = 30,
+        { -- Level 10
+            time = 35,
             layout = {
-                {3, 1, 3, 1, 3, 1, 3, 1, 3},
-                {1, 1, 1, 1, 1, 1, 1, 1, 1},
-                {3, 1, 3, 1, 3, 1, 3, 1, 3},
-                {1, 1, 1, 1, 1, 1, 1, 1, 1},
-                {3, 1, 3, 1, 3, 1, 3, 1, 3},
-                {1, 1, 1, 1, 1, 1, 1, 1, 1},
-                {3, 1, 3, 1, 3, 1, 3, 1, 3},
-                {1, 1, 1, 1, 1, 1, 1, 1, 1},
-                {3, 1, 3, 1, 3, 1, 3, 1, 3}
+                {8, 6, 8, 6, 8, 6, 8, 6, 8},
+                {6, 6, 6, 6, 6, 6, 6, 6, 6},
+                {8, 6, 8, 6, 8, 6, 8, 6, 8},
+                {6, 6, 6, 6, 6, 6, 6, 6, 6},
+                {8, 6, 8, 6, 8, 6, 8, 6, 8},
+                {6, 6, 6, 6, 6, 6, 6, 6, 6},
+                {8, 6, 8, 6, 8, 6, 8, 6, 8},
+                {6, 6, 6, 6, 6, 6, 6, 6, 6},
+                {8, 6, 8, 6, 8, 6, 8, 6, 8}
             }
         }
     }
@@ -452,6 +499,20 @@ function Game:new()
     self.score = 0
     self.scoreDisplay = 0
     self.lives = 3
+
+    -- Game stats
+    self.timeElapsed = 0
+    self.chainsDestroyed = 0
+    self.maxCombo = 0
+    self.largestGroup = 0
+    self.levelsBeaten = 0
+    self.levelsStarted = 0
+end
+
+
+
+function Game:init()
+    self.settings:load()
 end
 
 
@@ -484,6 +545,23 @@ end
 function Game:advanceLevel()
     self.levelNumber = self.levelNumber + 1
     self.lives = 3
+    self.levelsBeaten = self.levelsBeaten + 1
+end
+
+
+
+function Game:endGame()
+    self.levelNumber = 1
+    self.score = 0
+    self.scoreDisplay = 0
+    self.lives = 3
+
+    self.timeElapsed = 0
+    self.chainsDestroyed = 0
+    self.maxCombo = 0
+    self.largestGroup = 0
+    self.levelsBeaten = 0
+    self.levelsStarted = 0
 end
 
 
@@ -491,6 +569,13 @@ end
 function Game:startLevel(number)
     number = number or self.levelNumber
     self.level = Level(number, self.LEVELS[number])
+    self.levelsStarted = self.levelsStarted + 1
+end
+
+
+
+function Game:backToMain()
+    self.level = MainMenu()
 end
 
 
@@ -559,6 +644,24 @@ end
 
 function Game:mousereleased(x, y, button)
     self.level:mousereleased(x, y, button)
+end
+
+
+
+function Game:keypressed(key)
+    self.level:keypressed(key)
+end
+
+
+
+function Game:focus(focus)
+    self.level:focus(focus)
+end
+
+
+
+function Game:quit()
+    self.settings:save()
 end
 
 

@@ -136,7 +136,7 @@ end
 function MainMenu:getBars(value)
     local text = ""
     for i = 1, 10 do
-        text = text .. ((value - 0.005 > 1 - i / 10) and "|" or ".")
+        text = text .. ((value + 0.005 > i / 10) and "|" or ".")
     end
     return string.format(text .. " %d%%", value * 100)
 end
@@ -272,6 +272,25 @@ end
 
 
 function MainMenu:mousereleased(x, y, button)
+    
+end
+
+
+
+function MainMenu:keypressed(key)
+    if self.screen == "_game" then
+        local keys = {"1", "2", "3", "4", "5", "6", "7", "8", "9", "0"}
+        for i, k in ipairs(keys) do
+            if k == key then
+                _Game.levelNumber = i
+            end
+        end
+    end
+end
+
+
+
+function MainMenu:focus(focus)
     
 end
 

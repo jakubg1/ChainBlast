@@ -21,6 +21,16 @@ function Board:new(level, layout)
         Vec2(0, 1),
         Vec2(-1, 0)
     }
+    self.TILE_IDS = {
+        {0, 0},
+        {1, 0},
+        {2, 0},
+        {0, 1},
+        {0, 2},
+        {0, 3},
+        {1, 2},
+        {2, 3}
+    }
 
     -- Tile coordinates go from (1, 1) to (9, 9).
     -- Each tile can be:
@@ -175,18 +185,19 @@ function Board:fill()
                 if tileID > 0 then
                     local coords = Vec2(i, j)
                     local tile = Tile(self, coords:clone(), (i + j) * 0.12)
+                    local tileParams = self.TILE_IDS[tileID]
                     local object = nil
-                    if tileID == 1 or tileID >= 4 then
+                    if tileParams[1] == 0 then
                         object = Chain(self, coords:clone())
-                    elseif tileID == 2 or tileID == 3 then
-                        object = Crate(self, coords:clone(), tileID - 1)
+                    else
+                        object = Crate(self, coords:clone(), tileParams[1])
                     end
-                    if tileID == 4 or tileID == 5 then
+                    if tileParams[2] == 1 or tileParams[2] == 2 then
                         tile.iceType = 1
-                        tile.iceLevel = tileID - 3
-                    elseif tileID == 6 then
+                        tile.iceLevel = tileParams[2]
+                    elseif tileParams[2] == 3 then
                         tile.iceType = 2
-                        tile.iceLevel = 3
+                        tile.iceLevel = tileParams[2]
                     end
                     tile:setObject(object)
                     self.tiles[i][j] = tile
@@ -371,6 +382,9 @@ function Board:handleMatches()
         if self.level.combo > 1 then
             _Game.SOUNDS.combo:play(1, 0.65 + (self.level.combo - 2) * 0.1)
         end
+        --if #match > 4 then
+        --    _Game.SOUNDS.chainDestroyBig:play()
+        --end
 
         self.level:startTimer()
     end
@@ -673,7 +687,7 @@ function Board:draw()
     end
 
     -- Hover sprite
-    if self.hoverCoords and not self.selecting then
+    if self.hoverCoords and not self.selecting and not self.level.pause then
         _Display:drawSprite(_Game.SPRITES.hover, math.floor(math.sin(_Time * 3) * 2 + 2) + 1, self:getTilePos(self.hoverCoords) - 5)
     end
 end
@@ -685,7 +699,8 @@ function Board:mousepressed(x, y, button)
         if self.hoverCoords and self:getTile(self.hoverCoords) and self:getTile(self.hoverCoords):getChain() then
             self.selecting = true
         end
-    elseif button == 2 then
+    elseif button == 2 and false then
+        -- debug
         local coords = self:getTileCoords(_MousePos)
         if coords then
             --local tile = self:getTile(coords)

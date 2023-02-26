@@ -35,10 +35,19 @@ Day 5: Different board shapes, level intro/outro animations, HUD, timer, potenti
 Day 6: Level complete/lose screen, more than one level, rainbow links, lives, a few sound effects
 Day 7: Main menu, power meter, more sound effects
 Day 8: Settings, obstacles, special tiles, more chain colors
+Day 9: Designing all 10 levels, pause menu, game over
 --- WE'RE HERE
-Day 9: Installing music, pause menu, designing all 10 levels, game over, game win
-Day 10: QoL, playtests, balancing, adjustments and anything that hasn't been addressed so far. Packaging it up, and sending!
+Day 10: Installing music, game win, QoL, playtests, balancing, adjustments and anything that hasn't been addressed so far. Packaging it up, and sending!
 
+Idea bucket:
+- Making the window resizable
+- Fix multi-shuffles and shuffles on starting a level
+- Divide tile borders into chunks so some can be not rendered
+- Hints after 4 seconds pass, and if 3 seconds without mouse movement, auto-pause
+
+- "This is your last chance! Don't screw it up!" when entering the level with one life left (Done!)
+- Saving settings (Done!)
+- Cheat buttons for levels (Done!)
 
 GIMP color ff -> c0: 47% cover
 

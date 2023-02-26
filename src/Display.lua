@@ -55,17 +55,18 @@ end
 
 
 
-function Display:drawText(text, pos, align, font, color, alpha)
+function Display:drawText(text, pos, align, font, color, alpha, scale)
     color = color or {1, 1, 1}
     font = font or _Game.FONTS.standard
+    scale = scale or 1
 
     love.graphics.setColor(color[1], color[2], color[3], alpha)
     love.graphics.setFont(font)
     if align then
-        local size = self:getTextSize(text, font)
+        local size = self:getTextSize(text, font) * scale
         pos = (pos - size * align):floor()
     end
-    love.graphics.print(text, pos.x, pos.y)
+    love.graphics.print(text, pos.x, pos.y, 0, scale)
 end
 
 

@@ -265,6 +265,9 @@ function Chain:onDestroy()
         table.insert(_Game.sparks, Spark(self:getPos() + 7 + Vec2(love.math.randomNormal(2, 0), love.math.randomNormal(2, 0))))
     end
     table.insert(_Game.explosions, Explosion(self:getPos() - Vec2(15)))
+    if not self.panicTime then
+        _Game.chainsDestroyed = _Game.chainsDestroyed + 1
+    end
 end
 
 
