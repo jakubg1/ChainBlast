@@ -12,7 +12,9 @@ function MainMenu:new()
     self.screen = ""
     self.screenTransition = nil
     self.screenTransitionTarget = nil
-    self.fadeTime = nil
+    self.fadeInTime = 0
+    self.fadeInExploded = false
+    self.fadeOutTime = nil
 
     self.options = {}
     self.optionsY = 60
@@ -28,8 +30,6 @@ function MainMenu:new()
     for i = 1, 100 do
         table.insert(self.stars, Star(love.math.random()))
     end
-
-    self:initScreen("main")
 end
 
 
@@ -45,14 +45,26 @@ function MainMenu:update(dt)
             self.screenTransition = nil
             self.screenTransitionTarget = nil
         end
-    elseif self.fadeTime then
-        self.fadeTime = self.fadeTime + dt
-        if self.fadeTime >= 1 then
+    elseif self.fadeInTime then
+        self.fadeInTime = self.fadeInTime + dt
+        if not self.fadeInExploded and self.fadeInTime >= 1.5 then
+            _Game.SOUNDS.explosion:play()
+            self.fadeInExploded = true
+        end
+        if self.fadeInTime >= 2.5 then
+            self:initScreen("main")
+            _Game.MUSIC.menu:play()
+            self.fadeInTime = nil
+        end
+    elseif self.fadeOutTime then
+        self.fadeOutTime = self.fadeOutTime + dt
+        if self.fadeOutTime >= 1 then
             _Game:startLevel()
         end
     else
         for i, option in ipairs(self.options) do
-            if _MousePos.x >= 60 and _MousePos.x <= 140 and _MousePos.y >= self.optionsY + i * 10 and _MousePos.y < self.optionsY + (i + 1) * 10 then
+            local pos = _Display.mousePos
+            if pos.x >= 60 and pos.x <= 140 and pos.y >= self.optionsY + i * 10 and pos.y < self.optionsY + (i + 1) * 10 then
                 self.selectedOption = i
                 if selectedOptionOld ~= i then
                     _Game.SOUNDS.uiHover:play()
@@ -118,7 +130,8 @@ function MainMenu:initScreen(screen)
         self.options = {"Credits", "Back to Menu"}
         self.optionsY = 110
     elseif screen == "_game" then
-        self.fadeTime = 0
+        self.fadeOutTime = 0
+        _Game.MUSIC.menu:stop(1)
     elseif screen == "_quit" then
         love.event.quit()
     end
@@ -154,11 +167,22 @@ end
 
 
 function MainMenu:draw()
-    for i, star in ipairs(self.stars) do
-        star:draw()
-    end
+    if self.fadeInTime and self.fadeInTime < 1.5 then
+        _Display:drawText("Chain", Vec2(95 - (1.5 - self.fadeInTime) * 300, 30), Vec2(1, 0.5), nil, {0, 1, 0}, nil, 2)
+        _Display:drawText("Blast", Vec2(105 + (1.5 - self.fadeInTime) * 300, 30), Vec2(0, 0.5), nil, {0, 1, 0}, nil, 2)
+    else
+        for i, star in ipairs(self.stars) do
+            star:draw()
+        end
 
-    _Display:drawText("Connext? Chain Blast?", Vec2(100, 30), Vec2(0.5), nil, {0, 1, 0})
+        _Display:drawText("Chain Blast", Vec2(100, 30), Vec2(0.5), nil, {0, 1, 0}, nil, 2)
+        _Display:drawText("LOVE Jam Demo", Vec2(2, 150), Vec2(0, 1))
+        _Display:drawText("Version 1", Vec2(198, 150), Vec2(1, 1))
+
+        if self.fadeInTime then
+            _Display:drawRect(Vec2(), Vec2(200, 150), true, nil, 2.5 - self.fadeInTime)
+        end
+    end
 
     if self.optionsHeader then
         _Display:drawText(self.optionsHeader, Vec2(100, self.optionsY - 5), Vec2(0.5, 0))
@@ -179,8 +203,6 @@ function MainMenu:draw()
     local color = _GetRainbowColor(_Time / 4)
     _Display:drawText(">", Vec2(70 + math.sin(_Time * math.pi) * 4 - xSeparation, self.optionsY + self.cursorAnim * 10 + 0.5), Vec2(1, 0), nil, color)
     _Display:drawText("<", Vec2(130 - math.sin(_Time * math.pi) * 4 + xSeparation, self.optionsY + self.cursorAnim * 10 + 0.5), Vec2(0, 0), nil, color)
-
-    _Display:drawText("LOVE Jam Demo", Vec2(2, 150), Vec2(0, 1))
 
     if self.screen == "main" and self.joke then
         _Display:drawText(self.joke, Vec2(200 - self.jokeTime * 25, 130), Vec2(0, 0.5), nil, {0.5, 0.5, 0.5})
@@ -209,8 +231,8 @@ function MainMenu:draw()
     --end
     --_Display:drawText("Click anywhere to start!", Vec2(100, 80), Vec2(0.5), nil, nil, alpha)
 
-    if self.fadeTime then
-        _Display:drawRect(Vec2(), Vec2(200, 150), true, {0, 0, 0}, self.fadeTime)
+    if self.fadeOutTime then
+        _Display:drawRect(Vec2(), Vec2(200, 150), true, {0, 0, 0}, self.fadeOutTime)
     end
 end
 

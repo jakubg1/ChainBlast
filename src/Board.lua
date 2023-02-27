@@ -46,6 +46,8 @@ function Board:new(level, layout)
     self.selectedDirections = {}
     -- It might be the case that we cross an already selected tile. In such case, this will not necessarily be the last entry in the selectedCoords table.
     self.selectingDirection = nil
+    self.hintTime = 0
+    self.hintCoords = nil
 
     self.fallingObjectCount = 0
     self.shufflingChainCount = 0
@@ -104,9 +106,16 @@ function Board:update(dt)
     -- Tile hovering
     self.hoverCoords = nil
     if self.playerControl then
-        local hoverCoords = self:getTileCoords(_MousePos)
-        if hoverCoords.x >= 1 and hoverCoords.y >= 1 and hoverCoords.x <= self.SIZE.x and hoverCoords.y <= self.SIZE.y then
+        local hoverCoords = self:getTileCoords(_Display.mousePos)
+        if self:getTile(hoverCoords) then
             self.hoverCoords = hoverCoords
+        end
+        if not self.hintCoords then
+            self.hintTime = self.hintTime + dt
+            if self.hintTime >= 3 then
+                self.hintCoords = self:getRandomMatchableTile().coords
+                _Game.SOUNDS.hint:play()
+            end
         end
     end
 
@@ -204,7 +213,7 @@ function Board:fill()
                 end
             end
         end
-    until #self:getMatchGroups() == 0
+    until #self:getMatchGroups() == 0 and self:areMovesAvailable()
 
     -- Move all the chains up and animate them accordingly.
     for i = 1, 9 do
@@ -387,6 +396,8 @@ function Board:handleMatches()
         --end
 
         self.level:startTimer()
+        self.hintCoords = nil
+        self.hintTime = 0
     end
 end
 
@@ -495,17 +506,19 @@ function Board:shuffle()
         end
     end
 
-    local shuffledCoords = {}
-    for i, coords in ipairs(coordsList) do
-        table.insert(shuffledCoords, love.math.random(1, #shuffledCoords + 1), coords)
-    end
+    repeat
+        local shuffledCoords = {}
+        for i, coords in ipairs(coordsList) do
+            table.insert(shuffledCoords, love.math.random(1, #shuffledCoords + 1), coords)
+        end
 
-    for i = 1, #shuffledCoords do
-        local coords = shuffledCoords[i]
-        local chain = chains[i]
-        self:getTile(coords):setObject(chain)
-        chain:shuffleTo(coords)
-    end
+        for i = 1, #shuffledCoords do
+            local coords = shuffledCoords[i]
+            local chain = chains[i]
+            self:getTile(coords):setObject(chain)
+            chain:shuffleTo(coords)
+        end
+    until self:areMovesAvailable()
 
     _Game.SOUNDS.shuffle:play()
 end
@@ -544,6 +557,28 @@ function Board:getRandomNonGoldTile(excludedCoords)
             if not excluded then
                 local tile = self:getTile(coords)
                 if tile and not tile.gold then
+                    table.insert(tiles, tile)
+                end
+            end
+        end
+    end
+    if #tiles == 0 then
+        return
+    end
+    return tiles[love.math.random(#tiles)]
+end
+
+
+
+function Board:getRandomMatchableTile()
+    local tiles = {}
+    for i = 1, self.SIZE.x do
+        for j = 1, self.SIZE.y do
+            local coords = Vec2(i, j)
+            local tile = self:getTile(coords)
+            if tile then
+                local chain = tile:getChain()
+                if chain and chain:canMakeMatch() then
                     table.insert(tiles, tile)
                 end
             end
@@ -602,6 +637,7 @@ function Board:nukeEverything()
             end
         end
     end
+    self.hintCoords = nil
     _Game.SOUNDS.explosion:play()
 end
 
@@ -625,36 +661,47 @@ end
 
 function Board:draw()
     local color = {0.75, 0.75, 0.75}
+
     -- Horizontal lines
     for i = 0, self.SIZE.y do
-        local y = 8 + i * 15
-        local w = 136
+        -- Bounds
+        local a = 1
+        local b = 10
         if self.startAnimation then
-            w = math.max(math.min((self.startAnimation * 125) - 15 * i, 136), 0)
-        elseif self.endAnimation then
-            w = -math.max(math.min(((self.endAnimation - 0.2) * 125) - 15 * i, 136), 0)
+            b = math.max(math.min((self.startAnimation * 9) - i, 10), 1)
         end
-        if w > 0 then
-            _Display:drawLine(Vec2(58, y), Vec2(58 + w, y), color)
-        elseif w < 0 or self.endAnimation then
-            _Display:drawLine(Vec2(58 - w, y), Vec2(194, y), color)
+        if self.endAnimation then
+            a = math.max(math.min(((self.endAnimation - 0.2) * 9) - i, 10), 1)
+        end
+        -- Chunks
+        for j = 1, 9 do
+            -- Chunk 1 goes from 1 to 2, chunk 2 goes from 2 to 3, etc.
+            if a < j + 1 and b > j and (self:getTile(Vec2(j, i)) or self:getTile(Vec2(j, i + 1))) then
+                _Display:drawLine(self:getTilePos(Vec2(math.max(a, j), i + 1)) - Vec2(1), self:getTilePos(Vec2(math.min(b, j + 1), i + 1)) - Vec2(0, 1), color)
+            end
         end
     end
+
     -- Vertical lines
     for i = 0, self.SIZE.x do
-        local x = 58 + i * 15
-        local h = 135
+        -- Bounds
+        local a = 1
+        local b = 10
         if self.startAnimation then
-            h = math.max(math.min(((self.startAnimation - 0.2) * 125) - 15 * i, 135), 0)
-        elseif self.endAnimation then
-            h = -math.max(math.min(((self.endAnimation - 0.4) * 125) - 15 * i, 135), 0)
+            b = math.max(math.min(((self.startAnimation - 0.2) * 9) - i, 10), 1)
         end
-        if h > 0 then
-            _Display:drawLine(Vec2(x, 8), Vec2(x, 8 + h), color)
-        elseif h < 0 or self.endAnimation then
-            _Display:drawLine(Vec2(x, 8 - h), Vec2(x, 143), color)
+        if self.endAnimation then
+            a = math.max(math.min(((self.endAnimation - 0.4) * 9) - i, 10), 1)
+        end
+        -- Chunks
+        for j = 1, 9 do
+            -- Chunk 1 goes from 1 to 2, chunk 2 goes from 2 to 3, etc.
+            if a < j + 1 and b > j and (self:getTile(Vec2(i, j)) or self:getTile(Vec2(i + 1, j))) then
+                _Display:drawLine(self:getTilePos(Vec2(i + 1, math.max(a, j))) - Vec2(1, 2), self:getTilePos(Vec2(i + 1, math.min(b, j + 1))) - Vec2(1), color)
+            end
         end
     end
+
 
     -- Tiles
     for i = 1, self.SIZE.x do
@@ -686,6 +733,11 @@ function Board:draw()
         end
     end
 
+    -- Hint sprite
+    if self.hintCoords then
+        _Display:drawSprite(_Game.SPRITES.hint, math.floor((_Time * 15) % 10) + 1, self:getTilePos(self.hintCoords) - 2, _GetRainbowColor(_Time / 2))
+    end
+
     -- Hover sprite
     if self.hoverCoords and not self.selecting and not self.level.pause then
         _Display:drawSprite(_Game.SPRITES.hover, math.floor(math.sin(_Time * 3) * 2 + 2) + 1, self:getTilePos(self.hoverCoords) - 5)
@@ -701,7 +753,7 @@ function Board:mousepressed(x, y, button)
         end
     elseif button == 2 and false then
         -- debug
-        local coords = self:getTileCoords(_MousePos)
+        local coords = self:getTileCoords(_Display.mousePos)
         if coords then
             --local tile = self:getTile(coords)
             --if tile and tile:getObjectType() == "chain" then

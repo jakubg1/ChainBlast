@@ -24,6 +24,9 @@ function Level:new(number, data)
     self.pause = false
     self.pauseAnimation = 0
 
+    self.lastMousePos = _MousePos
+    self.mouseIdleTime = 0
+
     self.bombMeter = 0
     self.bombMeterTime = nil
     self.bombMeterCoords = {}
@@ -39,6 +42,8 @@ function Level:new(number, data)
     self.resultsAnimation = nil
     self.resultsAnimationSoundStep = 1
     self.RESULTS_ANIMATION_SOUND_STEPS = {1.2, 1.6, 2, 2.4, 2.8, 3.8}
+    self.gameWinAnimation = nil
+    self.gameWinChimePlayed = false
     self.gameOverAnimation = nil
     self.gameOverHeSaid = false
     self.gameResultsAnimation = nil
@@ -51,8 +56,10 @@ function Level:new(number, data)
     self.hudExtraTimeAlpha = 0
     self.hudExtraTimeValue = 0
     self.clockAlarm = false
+    self.dangerMusic = false
 
     _Game.SOUNDS.levelStart:play()
+    _Game.MUSIC.level:play()
 end
 
 
@@ -81,6 +88,17 @@ function Level:update(dt)
             if self.board and not self.board.startAnimation and not self.board.endAnimation then
                 self.timeElapsed = self.timeElapsed + dt
             end
+
+            if self.lastMousePos == _MousePos and self:isTimerTicking() then
+                self.mouseIdleTime = self.mouseIdleTime + dt
+                if not self.pause and self.mouseIdleTime > 3 then
+                    self:togglePause()
+                    self.mouseIdleTime = 0
+                end
+            else
+                self.mouseIdleTime = 0
+            end
+            self.lastMousePos = _MousePos
         end
 
         for i = #self.bombs, 1, -1 do
@@ -131,6 +149,18 @@ function Level:update(dt)
     if self.clockAlarm and (self.time > 5 or not self:isTimerTicking()) then
         self.clockAlarm = false
         _Game.SOUNDS.clockAlarm:stop()
+    end
+
+    if not self.dangerMusic and self.time < 10 and self:isTimerTicking() then
+        self.dangerMusic = true
+        _Game.MUSIC.level:play(0, 0.5)
+        _Game.MUSIC.danger:play()
+    end
+
+    if self.dangerMusic and self.time > 15 and self:isTimerTicking() then
+        self.dangerMusic = false
+        _Game.MUSIC.level:play(1, 2)
+        _Game.MUSIC.danger:stop(1)
     end
 
     if self.startAnimation then
@@ -195,6 +225,14 @@ function Level:update(dt)
         end
     end
 
+    if self.gameWinAnimation then
+        self.gameWinAnimation = self.gameWinAnimation + dt
+        if not self.gameWinChimePlayed and self.gameWinAnimation >= 1 then
+            _Game.SOUNDS.gameWin:play()
+            self.gameWinChimePlayed = true
+        end
+    end
+
     if self.gameResultsAnimation then
         self.gameResultsAnimation = self.gameResultsAnimation + dt
         local threshold = self.GAME_RESULTS_ANIMATION_SOUND_STEPS[self.gameResultsAnimationSoundStep]
@@ -235,14 +273,25 @@ end
 
 
 function Level:canPause()
-    return not (self.startAnimation or self.winAnimation or self.loseAnimation or self.resultsAnimation or self.gameOverAnimation or self.gameResultsAnimation)
+    return not (self.startAnimation or self.winAnimation or self.loseAnimation or self.resultsAnimation or self.gameOverAnimation or self.gameWinAnimation or self.gameResultsAnimation)
 end
 
 
 
 function Level:togglePause()
     self.pause = not self.pause
-    if not self:canPause() then
+    if self:canPause() then
+        if self.pause then
+            _Game.MUSIC.level:play(0, 1)
+            _Game.MUSIC.danger:play(0, 1)
+        else
+            if self.dangerMusic then
+                _Game.MUSIC.danger:play(1, 0.5)
+            else
+                _Game.MUSIC.level:play(1, 1)
+            end
+        end
+    else
         self.pause = false
     end
 end
@@ -280,6 +329,8 @@ end
 function Level:win()
     self.winAnimation = 0
     _Game.SOUNDS.levelWin:play()
+    _Game.MUSIC.level:stop(0.25)
+    _Game.MUSIC.danger:stop(0.25)
 end
 
 
@@ -291,6 +342,8 @@ function Level:lose()
 
     self.loseAnimation = 0
     _Game.SOUNDS.levelLose:play()
+    _Game.MUSIC.level:stop(0.25)
+    _Game.MUSIC.danger:stop(0.25)
 end
 
 
@@ -469,6 +522,10 @@ function Level:draw()
                 else
                     text = "Click anywhere to continue!"
                 end
+            else
+                if self.number == 10 then
+                    text = "Click anywhere to continue!"
+                end
             end
             --local alpha = (math.sin((self.resultsAnimation - 4.5) * math.pi) + 2) / 3
             local alpha = 0.5 + (self.resultsAnimation % 2) * 0.5
@@ -487,9 +544,49 @@ function Level:draw()
         end
     end
 
+    if self.gameWinAnimation then
+        if self.gameWinAnimation > 0.5 and self.gameWinAnimation <= 9 then
+            local alpha = math.max(self.gameWinAnimation * 2 - 0.5, 0)
+            if self.gameWinAnimation > 7 then
+                alpha = math.min((9 - self.gameWinAnimation) / 2, 1)
+            end
+            _Display:drawRect(Vec2(), Vec2(200, 150), true, _GetRainbowColor(math.min((self.gameWinAnimation - 2) / 2, 1.3)), alpha)
+            _Display:drawText("YOU", Vec2(100, 75), Vec2(0.5, 1), nil, {0, 0, 0}, nil, 5)
+            _Display:drawText("WIN!", Vec2(100, 75), Vec2(0.5, 0), nil, {0, 0, 0}, nil, 5)
+        elseif self.gameWinAnimation > 9 then
+            local alpha = math.min(math.max((self.gameWinAnimation - 9) * 2, 0), 1)
+            _Display:drawText("Congratulations!", Vec2(100, 10), Vec2(0.5), nil, {1, 1, 0}, alpha)
+            local yOffset = math.max((11 - self.gameWinAnimation) * 150, 0)
+            local text = {
+                "You've beaten all ten levels!",
+                "But... is that the end? Well, I hope not!",
+                "This is just a demo I've made in one week.",
+                "I have a few more ideas for the full game!",
+                --"I've had the concept for this game",
+                --"sitting in my head for past few months!",
+                "I hope you've enjoyed this journey.",
+                "Were some levels too hard?",
+                "Did you not like something?",
+                "Or maybe you have some cool ideas?",
+                "I'd love your feedback!"
+            }
+            for i, line in ipairs(text) do
+                _Display:drawText(line, Vec2(100, 20 + i * 10 + yOffset), Vec2(0.5))
+            end
+        end
+        if self.gameWinAnimation > 11.5 then
+            local text = "Click anywhere to continue!"
+            local alpha = 0.5 + (self.gameWinAnimation % 2) * 0.5
+            if self.gameWinAnimation % 2 > 1 then
+                alpha = 1 + (1 - self.gameWinAnimation % 2) * 0.5
+            end
+            _Display:drawText(text, Vec2(100, 130), Vec2(0.5), nil, nil, alpha)
+        end
+    end
+
     if self.gameResultsAnimation then
         local alpha = math.min(math.max((self.gameResultsAnimation - 0.5) * 2, 0), 1)
-        _Display:drawText(string.format("Game Results", self.number), Vec2(100, 10), Vec2(0.5), nil, nil, alpha)
+        _Display:drawText("Game Results", Vec2(100, 10), Vec2(0.5), nil, nil, alpha)
         if self.gameResultsAnimation > 1.2 then
             _Display:drawText("Chains Destroyed:", Vec2(20, 30), Vec2(0, 0.5))
         end
@@ -554,6 +651,9 @@ function Level:mousepressed(x, y, button)
             if _Game.lives == 0 then
                 self.resultsAnimation = nil
                 self.gameResultsAnimation = 0
+            elseif not self.lost and self.number == 10 then
+                self.resultsAnimation = nil
+                self.gameWinAnimation = 0
             else
                 if not self.lost then
                     _Game:advanceLevel()
@@ -561,6 +661,9 @@ function Level:mousepressed(x, y, button)
                 _Game:startLevel()
             end
             _Game.SOUNDS.uiSelect:play()
+        elseif self.gameWinAnimation and self.gameWinAnimation > 11.5 then
+            self.gameWinAnimation = nil
+            self.gameResultsAnimation = 0
         elseif self.gameResultsAnimation and self.gameResultsAnimation > 4.5 then
             _Game:endGame()
             _Game:backToMain()

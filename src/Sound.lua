@@ -6,8 +6,10 @@ local Sound = class:derive("Sound")
 
 
 
-function Sound:new(path, instances, isLooping)
+function Sound:new(path, instances, isLooping, asMusic)
     instances = instances or 4
+    self.volumeGovernedByMusicSetting = asMusic or false -- This is useful for music cues that are actually sounds (like level finish).
+
     self.instances = {}
     for i = 1, instances do
         self.instances[i] = {sound = love.audio.newSource(path, "static"), volume = 1}
@@ -41,7 +43,12 @@ end
 
 
 
-function Sound:setVolume(volume)
+function Sound:setVolume(volume, asMusic)
+    asMusic = asMusic or false
+    if self.volumeGovernedByMusicSetting ~= asMusic then
+        return
+    end
+    
     for i, instance in ipairs(self.instances) do
         instance.sound:setVolume(instance.volume * volume)
     end

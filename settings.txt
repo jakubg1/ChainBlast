@@ -1,1 +1,1 @@
-{"musicVolume":0,"soundVolume":0.1}
+{"soundVolume":0.2,"musicVolume":0.5}

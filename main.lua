@@ -35,8 +35,9 @@ end
 
 function love.update(dt)
     _Time = _Time + dt
-    _MousePos = Vec2(love.mouse.getPosition()) / 4
+    _MousePos = Vec2(love.mouse.getPosition())
 
+	_Display:update(dt)
     _Game:update(dt)
 end
 

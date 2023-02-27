@@ -9,11 +9,31 @@ local Vec2 = require("src.Vector2")
 
 function Display:new()
     self.SIZE = Vec2(200, 150)
-    self.SCALE = 4
+    self.mousePos = Vec2()
 
     love.graphics.setDefaultFilter("nearest", "nearest")
     love.graphics.setLineStyle("rough")
     self.canvas = love.graphics.newCanvas(200, 150)
+end
+
+
+
+function Display:update(dt)
+    self.mousePos = (_MousePos - self:getCanvasOffset()) / self:getScale()
+end
+
+
+
+function Display:getScale()
+    local windowSize = Vec2(love.window.getMode())
+    return math.floor(windowSize.y / self.SIZE.y)
+end
+
+
+
+function Display:getCanvasOffset()
+    local windowSize = Vec2(love.window.getMode())
+    return ((windowSize - self.SIZE * self:getScale()) / 2):floor()
 end
 
 
@@ -86,7 +106,8 @@ function Display:draw()
     -- Draw the pixels onto the screen.
     love.graphics.setCanvas()
     love.graphics.setColor(1, 1, 1)
-    love.graphics.draw(self.canvas, 0, 0, 0, self.SCALE)
+    local offset = self:getCanvasOffset()
+    love.graphics.draw(self.canvas, offset.x, offset.y, 0, self:getScale())
 
     -- Clear the canvas and prepare it for the next frame.
     love.graphics.setCanvas(self.canvas)

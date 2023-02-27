@@ -7,6 +7,7 @@ local Vec2 = require("src.Vector2")
 local Sprite = require("src.Sprite")
 local Settings = require("src.Settings")
 local Sound = require("src.Sound")
+local Music = require("src.Music")
 
 local MainMenu = require("src.MainMenu")
 local Level = require("src.Level")
@@ -69,6 +70,49 @@ function Game:new()
         {
             pos = Vec2(72, 0),
             size = Vec2(24)
+        }
+    }
+
+    local HINT_STATES = {
+        {
+            pos = Vec2(),
+            size = Vec2(18)
+        },
+        {
+            pos = Vec2(18, 0),
+            size = Vec2(18)
+        },
+        {
+            pos = Vec2(36, 0),
+            size = Vec2(18)
+        },
+        {
+            pos = Vec2(54, 0),
+            size = Vec2(18)
+        },
+        {
+            pos = Vec2(72, 0),
+            size = Vec2(18)
+        },
+        {
+            pos = Vec2(90, 0),
+            size = Vec2(18)
+        },
+        {
+            pos = Vec2(108, 0),
+            size = Vec2(18)
+        },
+        {
+            pos = Vec2(126, 0),
+            size = Vec2(18)
+        },
+        {
+            pos = Vec2(144, 0),
+            size = Vec2(18)
+        },
+        {
+            pos = Vec2(162, 0),
+            size = Vec2(18)
         }
     }
 
@@ -301,6 +345,7 @@ function Game:new()
         },
         crate = Sprite("assets/sprites/crate.png", {{pos = Vec2(), size = Vec2(14)}, {pos = Vec2(14, 0), size = Vec2(14)}}),
         hover = Sprite("assets/sprites/hover.png", HOVER_STATES),
+        hint = Sprite("assets/sprites/hint.png", HINT_STATES),
         selection = Sprite("assets/sprites/selection.png", SELECTION_STATES),
         selectionArrows = Sprite("assets/sprites/selection_arrows.png", SELECTION_ARROW_STATES),
         tiles = Sprite("assets/sprites/tiles.png", TILE_STATES),
@@ -328,14 +373,22 @@ function Game:new()
         explosion = Sound("assets/sounds/explosion.wav", 1),
         explosion2 = Sound("assets/sounds/explosion2.wav"),
         gameOver = Sound("assets/sounds/game_over_T.wav", 1),
+        gameWin = Sound("assets/sounds/game_win_T.wav", 1, false, true),
+        hint = Sound("assets/sounds/hint.wav", 1),
         iceBreak = Sound("assets/sounds/ice_break.wav"),
-        levelLose = Sound("assets/sounds/level_lose_T.wav", 1),
+        levelLose = Sound("assets/sounds/level_lose_T.wav", 1, false, true),
         levelStart = Sound("assets/sounds/level_start_T.wav", 1),
-        levelWin = Sound("assets/sounds/level_win_T.wav", 1),
+        levelWin = Sound("assets/sounds/level_win_T.wav", 1, false, true),
         shuffle = Sound("assets/sounds/shuffle.wav", 1),
         uiHover = Sound("assets/sounds/ui_hover.wav"),
         uiSelect = Sound("assets/sounds/ui_select.wav"),
         uiStats = Sound("assets/sounds/ui_stats.wav")
+    }
+
+    self.MUSIC = {
+        menu = Music("assets/music/menu.mp3"),
+        level = Music("assets/music/level.mp3"),
+        danger = Music("assets/music/danger.mp3")
     }
 
     -- 0: no tile
@@ -459,7 +512,7 @@ function Game:new()
             }
         },
         { -- Level 9
-            time = 25,
+            time = 35,
             layout = {
                 {5, 5, 5, 5, 5, 5, 5, 5, 5},
                 {5, 5, 5, 5, 5, 5, 5, 5, 5},
@@ -484,6 +537,20 @@ function Game:new()
                 {8, 6, 8, 6, 8, 6, 8, 6, 8},
                 {6, 6, 6, 6, 6, 6, 6, 6, 6},
                 {8, 6, 8, 6, 8, 6, 8, 6, 8}
+            }
+        },
+        { -- Level DEBUG
+            time = 45,
+            layout = {
+                {0, 0, 0, 0, 0, 0, 0, 0, 0},
+                {0, 0, 0, 0, 0, 0, 0, 0, 0},
+                {0, 0, 0, 0, 0, 0, 0, 0, 0},
+                {0, 0, 0, 0, 0, 0, 0, 0, 0},
+                {0, 0, 0, 0, 0, 0, 0, 0, 0},
+                {0, 0, 0, 1, 1, 1, 0, 0, 0},
+                {0, 0, 0, 0, 0, 0, 0, 0, 0},
+                {0, 0, 0, 0, 0, 0, 0, 0, 0},
+                {0, 0, 0, 0, 0, 0, 0, 0, 0}
             }
         }
     }
@@ -519,6 +586,10 @@ end
 
 function Game:update(dt)
     self.level:update(dt)
+
+    for musicN, music in pairs(self.MUSIC) do
+        music:update(dt)
+    end
 
     for i = #self.sparks, 1, -1 do
         local spark = self.sparks[i]
@@ -599,7 +670,10 @@ function Game:draw()
     -- Do debug stuff
     love.graphics.setCanvas()
 
-    _Display:drawText(string.format("FPS: %s", love.timer.getFPS()), Vec2(10))
+    _Display:drawText(string.format("FPS: %s", love.timer.getFPS()), Vec2(10, 10))
+    --if self.level and self.level.mouseIdleTime then
+    --    _Display:drawText(string.format("Mouse idle: %.2f", self.level.mouseIdleTime), Vec2(10, 20))
+    --end
 
     if self.level and false then
         local board = self.level.board

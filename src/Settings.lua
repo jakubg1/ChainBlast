@@ -9,8 +9,8 @@ local Settings = class:derive("Settings")
 function Settings:new()
     self.PATH = "settings.txt"
 
-    self.musicVolume = 1
-    self.soundVolume = 1
+    self.musicVolume = 0.5
+    self.soundVolume = 0.2
 end
 
 
@@ -42,6 +42,10 @@ end
 function Settings:apply()
     for soundN, sound in pairs(_Game.SOUNDS) do
         sound:setVolume(self.soundVolume)
+        sound:setVolume(self.musicVolume, true)
+    end
+    for musicN, music in pairs(_Game.MUSIC) do
+        music:setVolume(self.musicVolume)
     end
 end
 
