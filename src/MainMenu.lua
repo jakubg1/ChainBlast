@@ -177,7 +177,7 @@ function MainMenu:draw()
 
         _Display:drawText("Chain Blast", Vec2(100, 30), Vec2(0.5), nil, {0, 1, 0}, nil, 2)
         _Display:drawText("LOVE Jam Demo", Vec2(2, 150), Vec2(0, 1))
-        _Display:drawText("Version 1", Vec2(198, 150), Vec2(1, 1))
+        _Display:drawText("Version 1.0.1", Vec2(198, 150), Vec2(1, 1))
 
         if self.fadeInTime then
             _Display:drawRect(Vec2(), Vec2(200, 150), true, nil, 2.5 - self.fadeInTime)
