@@ -9,6 +9,7 @@ Licensing and authors:
     - All sprites and fonts by jakubg1 (MIT license)
     - Sounds:
         - Filenames ending with _T and .fur files by Crisps#9055 (CC-BY-SA 2.0)
+        - Game over sound voiced by Crisps, too
         - All other sounds by jakubg1 but actually generated using BFXR (https://www.bfxr.net/) (MIT license)
     - Music by Crisps#9055 (CC-BY-SA 2.0)
 
