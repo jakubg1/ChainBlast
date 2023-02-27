@@ -14,6 +14,11 @@ function Display:new()
     love.graphics.setDefaultFilter("nearest", "nearest")
     love.graphics.setLineStyle("rough")
     self.canvas = love.graphics.newCanvas(200, 150)
+
+    -- On my particular laptop with AMD A9, the lines and rectangles are drawn one pixel lower than they should.
+    -- I have no idea why's that, but this value hopefully resolves the problem.
+    local name, version, vendor, device = love.graphics.getRendererInfo()
+    self.PRIMITIVE_Y_ADJUST = (device == "AMD Radeon(TM) R5 Graphics") and 0 or 0.5
 end
 
 
@@ -49,7 +54,7 @@ function Display:drawLine(pos1, pos2, color, alpha, width)
     width = width or 1
     love.graphics.setColor(color[1], color[2], color[3], alpha)
     love.graphics.setLineWidth(width)
-    love.graphics.line(pos1.x + 0.5, pos1.y + 0.5, pos2.x + 0.5, pos2.y + 0.5)
+    love.graphics.line(pos1.x + 0.5, pos1.y + 0.5 + self.PRIMITIVE_Y_ADJUST, pos2.x + 0.5, pos2.y + 0.5 + self.PRIMITIVE_Y_ADJUST)
 end
 
 
@@ -57,7 +62,7 @@ end
 function Display:drawRect(pos, size, filled, color, alpha)
     color = color or {1, 1, 1}
     love.graphics.setColor(color[1], color[2], color[3], alpha)
-    love.graphics.rectangle(filled and "fill" or "line", pos.x, pos.y, size.x, size.y)
+    love.graphics.rectangle(filled and "fill" or "line", pos.x, pos.y + self.PRIMITIVE_Y_ADJUST, size.x, size.y)
 end
 
 

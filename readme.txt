@@ -13,4 +13,5 @@ Licensing and authors:
         - All other sounds by jakubg1 but actually generated using BFXR (https://www.bfxr.net/) (MIT license)
     - Music by Crisps#9055 (CC-BY-SA 2.0)
 
+- Game's itch.io page: https://jakubg1.itch.io/chain-blast-demo
 - This game is open-source! https://github.com/jakubg1/ChainBlast
