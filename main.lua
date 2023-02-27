@@ -22,7 +22,7 @@ _Display = nil
 
 
 function love.load()
-    if _VERSION[1] < 12 then
+    if _VERSION[1] < 12 and false then
         _Game = BadVersionScreen()
     else
         _Game = Game()
