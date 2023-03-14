@@ -555,6 +555,11 @@ function Game:new()
         }
     }
 
+    -- Difficulty parameters
+    self.SCORE_MULTIPLIERS = {1, 1.5, 2}
+    self.TIME_MULTIPLIERS = {2, 1.5, 1}
+    self.LIFE_COUNTS = {nil, 3, 3}
+
     self.settings = Settings()
 
     self.level = MainMenu()
@@ -565,7 +570,9 @@ function Game:new()
 
     self.score = 0
     self.scoreDisplay = 0
+    self.previousScore = 0 -- score when the level started to rollbacks
     self.lives = 3
+    self.difficulty = 3 -- from 1 (easy) to 3 (hardcore)
 
     -- Game stats
     self.timeElapsed = 0
@@ -615,8 +622,17 @@ end
 
 function Game:advanceLevel()
     self.levelNumber = self.levelNumber + 1
-    self.lives = 3
     self.levelsBeaten = self.levelsBeaten + 1
+    self.lives = self.LIFE_COUNTS[self.difficulty]
+    self:startLevel()
+end
+
+
+
+function Game:restartLevel()
+    self.score = self.previousScore
+    self.scoreDisplay = self.previousScore
+    self:startLevel()
 end
 
 
@@ -640,6 +656,7 @@ end
 function Game:startLevel(number)
     number = number or self.levelNumber
     self.level = Level(number, self.LEVELS[number])
+    self.previousScore = self.score
     self.levelsStarted = self.levelsStarted + 1
 end
 
@@ -647,6 +664,18 @@ end
 
 function Game:backToMain()
     self.level = MainMenu()
+end
+
+
+
+function Game:getScoreMultiplier()
+    return self.SCORE_MULTIPLIERS[self.difficulty]
+end
+
+
+
+function Game:getTimeMultiplier()
+    return self.TIME_MULTIPLIERS[self.difficulty]
 end
 
 

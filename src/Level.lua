@@ -17,7 +17,7 @@ function Level:new(number, data)
     self.bombs = {}
 
     self.score = 0
-    self.time = data.time
+    self.time = data.time * _Game:getTimeMultiplier()
     self.timeCounting = false
     self.combo = 0
     self.lost = false
@@ -246,6 +246,7 @@ end
 
 
 function Level:addScore(amount)
+    amount = amount * _Game:getScoreMultiplier()
     self.score = self.score + amount
     _Game.score = _Game.score + amount
 end
@@ -338,7 +339,9 @@ end
 function Level:lose()
     self.lost = true
     self.board:panicChains()
-    _Game.lives = _Game.lives - 1
+    if _Game.lives then
+        _Game.lives = _Game.lives - 1
+    end
 
     self.loseAnimation = 0
     _Game.SOUNDS.levelLose:play()
@@ -417,7 +420,7 @@ function Level:draw()
                 _Display:drawText(string.format("%.1f", self.time), Vec2(54, 65), Vec2(1, 0), nil, {1, 0, 0}, self.hudAlpha)
             end
         else
-            _Display:drawText(string.format("%.1d:%.2d", self.time / 60, self.time % 60), Vec2(54, 65), Vec2(1, 0), nil, nil, self.hudAlpha)
+            _Display:drawText(string.format("%.1d:%.2d", math.floor(self.time / 60), math.floor(self.time % 60)), Vec2(54, 65), Vec2(1, 0), nil, nil, self.hudAlpha)
         end
         if self.hudExtraTimeAlpha > 0 then
             _Display:drawText(string.format("+%s", self.hudExtraTimeValue), Vec2(56, 55), Vec2(1, 0), nil, nil, self.hudAlpha * self.hudExtraTimeAlpha)
@@ -461,7 +464,7 @@ function Level:draw()
             textAlpha = math.min(12 - self.loseAnimation, 1)
         end
         local texts = {"2 attempts left!", "Last attempt left!!!", "Uh oh..."}
-        local text = texts[3 - _Game.lives]
+        local text = _Game.lives and texts[3 - _Game.lives] or "Try again!"
         _Display:drawText(text, Vec2(101, 76), Vec2(0.5), nil, {0, 0, 0}, textAlpha * 0.5)
         _Display:drawText(text, Vec2(100, 75), Vec2(0.5), nil, {1, 0, 0}, textAlpha)
     end
@@ -498,7 +501,7 @@ function Level:draw()
         if self.resultsAnimation > 2.5 then
             local text = "No Bonus!"
             if not self.lost then
-                text = string.format("%.1fs = %s", self.time, self:getTimeBonus())
+                text = string.format("%.1fs = %s", self.time, self:getTimeBonus() * _Game:getScoreMultiplier())
             end
             _Display:drawText(text, Vec2(180, 70), Vec2(1, 0.5), nil, {1, 1, 0})
         end
@@ -517,7 +520,7 @@ function Level:draw()
         if self.resultsAnimation > 4.5 then
             local text = "Click anywhere to start next level!"
             if self.lost then
-                if _Game.lives > 0 then
+                if not _Game.lives or _Game.lives > 0 then
                     text = "Click anywhere to try again!"
                 else
                     text = "Click anywhere to continue!"
@@ -655,10 +658,11 @@ function Level:mousepressed(x, y, button)
                 self.resultsAnimation = nil
                 self.gameWinAnimation = 0
             else
-                if not self.lost then
+                if self.lost then
+                    _Game:restartLevel()
+                else
                     _Game:advanceLevel()
                 end
-                _Game:startLevel()
             end
             _Game.SOUNDS.uiSelect:play()
         elseif self.gameWinAnimation and self.gameWinAnimation > 11.5 then

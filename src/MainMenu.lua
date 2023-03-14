@@ -9,6 +9,14 @@ local Star = require("src.Star")
 
 
 function MainMenu:new()
+    self.DIFFICULTY_STRS = {
+        "Score 1x, time 2x, infinite attempts",
+        "Score 1.5x, time 1.5x",
+        "Score 2x, time 1x"
+    }
+
+
+
     self.screen = ""
     self.screenTransition = nil
     self.screenTransitionTarget = nil
@@ -113,6 +121,10 @@ function MainMenu:initScreen(screen)
         self.optionsHeader = "Main Menu"
         self.options = {"New Game", "Settings", "Credits", "Exit"}
         self.optionsY = 60
+    elseif screen == "difficulty" then
+        self.optionsHeader = "Select Difficulty"
+        self.options = {"Easy", "Challenging", "Hardcore", "Cancel"}
+        self.optionsY = 60
     elseif screen == "settings" then
         self.optionsHeader = "Settings"
         self.options = {
@@ -208,6 +220,12 @@ function MainMenu:draw()
         _Display:drawText(self.joke, Vec2(200 - self.jokeTime * 25, 130), Vec2(0, 0.5), nil, {0.5, 0.5, 0.5})
     end
 
+    if self.screen == "difficulty" then
+        if self.selectedOption and self.selectedOption >= 1 and self.selectedOption <= 3 then
+            _Display:drawText(self.DIFFICULTY_STRS[self.selectedOption], Vec2(100, 130), Vec2(0.5))
+        end
+    end
+
     if self.screen == "credits" then
         _Display:drawText("Made with <3", Vec2(100, 45), Vec2(0.5))
         _Display:drawText("For the LOVE Jam 2023!", Vec2(100, 55), Vec2(0.5))
@@ -242,13 +260,20 @@ function MainMenu:mousepressed(x, y, button)
     if button == 1 then
         if self.screen == "main" then
             if self.selectedOption == 1 then
-                self:transitionTo("_game")
+                self:transitionTo("difficulty")
             elseif self.selectedOption == 2 then
                 self:transitionTo("settings")
             elseif self.selectedOption == 3 then
                 self:transitionTo("credits")
             elseif self.selectedOption == 4 then
                 self:transitionTo("_quit")
+            end
+        elseif self.screen == "difficulty" then
+            if self.selectedOption >= 1 and self.selectedOption <= 3 then
+                _Game.difficulty = self.selectedOption
+                self:transitionTo("_game")
+            elseif self.selectedOption == 4 then
+                self:transitionTo("main")
             end
         elseif self.screen == "settings" then
             if self.selectedOption == 1 then

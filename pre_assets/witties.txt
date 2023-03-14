@@ -9,3 +9,5 @@ Top 10 Facts You Never Knew About: Inserting a fork into an electrical outlet ca
 Top 10 Facts You Never Knew About: Snow is usually more common during winter and less abundant in summer.
 death.fall.accident.water
 Connext? Chain Blast?
+love.graphics.draw(sprites.Sprite.frames[sprites.Sprite.currentFrame], sprites.Sprite.x, sprites.Sprite.y, sprites.Sprite.direction, sprites.Sprite.size, sprites.Sprite.size, sprites.Sprite.frames[sprites.Sprite.currentFrame]:getWidth, sprites.Sprite.frames[sprites.Sprite.currentFrame]:getHeight) @qu
+100% AI-generated content free!
