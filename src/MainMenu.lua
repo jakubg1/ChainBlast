@@ -188,8 +188,8 @@ function MainMenu:draw()
         end
 
         _Display:drawText("Chain Blast", Vec2(100, 30), Vec2(0.5), nil, {0, 1, 0}, nil, 2)
-        _Display:drawText("LOVE Jam Demo", Vec2(2, 150), Vec2(0, 1))
-        _Display:drawText("Version 1.0.1", Vec2(198, 150), Vec2(1, 1))
+        _Display:drawText("v. alpha 0.2", Vec2(2, 150), Vec2(0, 1))
+        _Display:drawText("by jakubg1", Vec2(198, 150), Vec2(1, 1))
 
         if self.fadeInTime then
             _Display:drawRect(Vec2(), Vec2(200, 150), true, nil, 2.5 - self.fadeInTime)
@@ -269,7 +269,7 @@ function MainMenu:mousepressed(x, y, button)
                 self:transitionTo("_quit")
             end
         elseif self.screen == "difficulty" then
-            if self.selectedOption >= 1 and self.selectedOption <= 3 then
+            if self.selectedOption and self.selectedOption >= 1 and self.selectedOption <= 3 then
                 _Game.difficulty = self.selectedOption
                 self:transitionTo("_game")
             elseif self.selectedOption == 4 then
