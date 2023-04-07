@@ -54,6 +54,39 @@ function Game:new()
         }
     }
 
+    local CHAIN_LINK_STATES = {
+        {
+            pos = Vec2(),
+            size = Vec2(2, 6)
+        },
+        {
+            pos = Vec2(0, 6),
+            size = Vec2(2, 5)
+        }
+    }
+
+    local CHAIN_LINKH_STATES = {
+        {
+            pos = Vec2(),
+            size = Vec2(6, 2)
+        },
+        {
+            pos = Vec2(6, 0),
+            size = Vec2(5, 2)
+        }
+    }
+
+    local POWERUP_STATES = {
+        {
+            pos = Vec2(),
+            size = Vec2(14)
+        },
+        {
+            pos = Vec2(14, 0),
+            size = Vec2(14)
+        }
+    }
+
     local HOVER_STATES = {
         {
             pos = Vec2(),
@@ -326,23 +359,24 @@ function Game:new()
             Sprite("assets/sprites/chain_cyan.png", CHAIN_STATES)
         },
         chainLinks = {
-            [0] = Sprite("assets/sprites/chain_link_rainbow.png", {{pos = Vec2(), size = Vec2(2, 11)}}),
-            Sprite("assets/sprites/chain_link_blue.png", {{pos = Vec2(), size = Vec2(2, 11)}}),
-            Sprite("assets/sprites/chain_link_red.png", {{pos = Vec2(), size = Vec2(2, 11)}}),
-            Sprite("assets/sprites/chain_link_yellow.png", {{pos = Vec2(), size = Vec2(2, 11)}}),
-            Sprite("assets/sprites/chain_link_green.png", {{pos = Vec2(), size = Vec2(2, 11)}}),
-            Sprite("assets/sprites/chain_link_pink.png", {{pos = Vec2(), size = Vec2(2, 11)}}),
-            Sprite("assets/sprites/chain_link_cyan.png", {{pos = Vec2(), size = Vec2(2, 11)}})
+            [0] = Sprite("assets/sprites/chain_link_rainbow.png", CHAIN_LINK_STATES),
+            Sprite("assets/sprites/chain_link_blue.png", CHAIN_LINK_STATES),
+            Sprite("assets/sprites/chain_link_red.png", CHAIN_LINK_STATES),
+            Sprite("assets/sprites/chain_link_yellow.png", CHAIN_LINK_STATES),
+            Sprite("assets/sprites/chain_link_green.png", CHAIN_LINK_STATES),
+            Sprite("assets/sprites/chain_link_pink.png", CHAIN_LINK_STATES),
+            Sprite("assets/sprites/chain_link_cyan.png", CHAIN_LINK_STATES)
         },
         chainLinksH = {
-            [0] = Sprite("assets/sprites/chain_linkh_rainbow.png", {{pos = Vec2(), size = Vec2(11, 2)}}),
-            Sprite("assets/sprites/chain_linkh_blue.png", {{pos = Vec2(), size = Vec2(11, 2)}}),
-            Sprite("assets/sprites/chain_linkh_red.png", {{pos = Vec2(), size = Vec2(11, 2)}}),
-            Sprite("assets/sprites/chain_linkh_yellow.png", {{pos = Vec2(), size = Vec2(11, 2)}}),
-            Sprite("assets/sprites/chain_linkh_green.png", {{pos = Vec2(), size = Vec2(11, 2)}}),
-            Sprite("assets/sprites/chain_linkh_pink.png", {{pos = Vec2(), size = Vec2(11, 2)}}),
-            Sprite("assets/sprites/chain_linkh_cyan.png", {{pos = Vec2(), size = Vec2(11, 2)}})
+            [0] = Sprite("assets/sprites/chain_linkh_rainbow.png", CHAIN_LINKH_STATES),
+            Sprite("assets/sprites/chain_linkh_blue.png", CHAIN_LINKH_STATES),
+            Sprite("assets/sprites/chain_linkh_red.png", CHAIN_LINKH_STATES),
+            Sprite("assets/sprites/chain_linkh_yellow.png", CHAIN_LINKH_STATES),
+            Sprite("assets/sprites/chain_linkh_green.png", CHAIN_LINKH_STATES),
+            Sprite("assets/sprites/chain_linkh_pink.png", CHAIN_LINKH_STATES),
+            Sprite("assets/sprites/chain_linkh_cyan.png", CHAIN_LINKH_STATES)
         },
+        powerups = Sprite("assets/sprites/powerups.png", POWERUP_STATES),
         crate = Sprite("assets/sprites/crate.png", {{pos = Vec2(), size = Vec2(14)}, {pos = Vec2(14, 0), size = Vec2(14)}}),
         hover = Sprite("assets/sprites/hover.png", HOVER_STATES),
         hint = Sprite("assets/sprites/hint.png", HINT_STATES),

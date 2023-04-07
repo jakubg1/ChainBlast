@@ -7,6 +7,8 @@ local Sprite = class:derive("Sprite")
 
 
 function Sprite:new(texPath, states)
+    self.texPath = texPath
+
     self.texture = love.graphics.newImage(texPath)
     self.states = {}
 
@@ -24,6 +26,7 @@ end
 
 
 function Sprite:getState(name)
+    assert(self.states[name], string.format("Tried to get a nonexistent state %s in sprite: %s", name, self.texPath))
     return self.states[name]
 end
 

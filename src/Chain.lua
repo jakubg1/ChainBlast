@@ -39,6 +39,16 @@ function Chain:new(board, coords)
     self.releaseTime = nil
     self.panicTime = nil
     self.panicOffset = Vec2()
+
+
+
+    self.LINK_OFFSETS = {
+        Vec2(6, 0),
+        Vec2(8, 6),
+        Vec2(6, 8),
+        Vec2(0, 6)
+    }
+    self.LINK_SUBSPRITES = {2, 1, 1, 2}
 end
 
 
@@ -289,21 +299,26 @@ function Chain:draw()
 
     -- Draw shadows first.
     _Display:drawSprite(sprite, self:getSubsprite(), self:getPos() + Vec2(1), {0, 0, 0}, 0.25)
-    if self:isConnected(1) and not self.rotationAnim then
-        _Display:drawSprite(_Game.SPRITES.chainLinks[self.color], 1, self:getPos() + Vec2(6, -6) + Vec2(1), {0, 0, 0}, 0.25)
-    end
-    if self:isConnected(4) and not self.rotationAnim then
-        _Display:drawSprite(_Game.SPRITES.chainLinksH[self.color], 1, self:getPos() + Vec2(-6, 6) + Vec2(1), {0, 0, 0}, 0.25)
+    if not self.rotationAnim then
+        for i = 1, 4 do
+            if self:isConnected(i) then
+                local linkSprite = (i % 2 == 1) and _Game.SPRITES.chainLinks[self.color] or _Game.SPRITES.chainLinksH[self.color]
+                _Display:drawSprite(linkSprite, self.LINK_SUBSPRITES[i], self:getPos() + self.LINK_OFFSETS[i] + Vec2(1), {0, 0, 0}, 0.25)
+            end
+        end
     end
 
     -- Now the actual sprite.
     _Display:drawSprite(sprite, self:getSubsprite(), self:getPos())
-    if self:isConnected(1) and not self.rotationAnim then
-        _Display:drawSprite(_Game.SPRITES.chainLinks[self.color], 1, self:getPos() + Vec2(6, -6))
+    if not self.rotationAnim then
+        for i = 1, 4 do
+            if self:isConnected(i) then
+                local linkSprite = (i % 2 == 1) and _Game.SPRITES.chainLinks[self.color] or _Game.SPRITES.chainLinksH[self.color]
+                _Display:drawSprite(linkSprite, self.LINK_SUBSPRITES[i], self:getPos() + self.LINK_OFFSETS[i])
+            end
+        end
     end
-    if self:isConnected(4) and not self.rotationAnim then
-        _Display:drawSprite(_Game.SPRITES.chainLinksH[self.color], 1, self:getPos() + Vec2(-6, 6))
-    end
+    _Display:drawSprite(_Game.SPRITES.powerups, 1, self:getPos())
 end
 
 
