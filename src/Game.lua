@@ -387,10 +387,13 @@ function Game:new()
         arrow = Sprite("assets/sprites/arrow.png", ARROW_STATES)
     }
 
+    local FONT_CHARACTERS = " abcdefghijklmnopqrstuvwxyząćęłńóśźżABCDEFGHIJKLMNOPQRSTUVWXYZĄĆĘŁŃÓŚŹŻ0123456789<>-+()[]_.,:;'!?@#$€%^&*\"/|\\"
     self.FONTS = {
-        standard = love.graphics.newImageFont("assets/fonts/standard.png", " abcdefghijklmnopqrstuvwxyząćęłńóśźżABCDEFGHIJKLMNOPQRSTUVWXYZĄĆĘŁŃÓŚŹŻ0123456789<>-+()[]_.,:;'!?@#$€%^&*\"/|\\", 1)
+        standard = love.graphics.newImageFont("assets/fonts/standard.png", FONT_CHARACTERS, 1),
+        small = love.graphics.newImageFont("assets/fonts/small.png", FONT_CHARACTERS, 1)
     }
     self.FONTS.standard:setFilter("nearest", "nearest")
+    self.FONTS.small:setFilter("nearest", "nearest")
 
     self.SOUNDS = {
         boardStart = Sound("assets/sounds/board_start.wav", 1),

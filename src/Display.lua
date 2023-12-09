@@ -8,12 +8,14 @@ local Vec2 = require("src.Vector2")
 
 
 function Display:new()
-    self.SIZE = Vec2(200, 150)
+    self.SIZE = Vec2(240, 135)
     self.mousePos = Vec2()
 
     love.graphics.setDefaultFilter("nearest", "nearest")
     love.graphics.setLineStyle("rough")
-    self.canvas = love.graphics.newCanvas(200, 150)
+    self.canvas = love.graphics.newCanvas(self.SIZE.x, self.SIZE.y)
+    self.motionBlurCanvas = love.graphics.newCanvas(self.SIZE.x, self.SIZE.y)
+    self.motionBlurStrength = 0 -- 0.65?
 
     -- On my particular laptop with AMD A9, the lines and rectangles are drawn one pixel lower than they should.
     -- I have no idea why's that, but this value hopefully resolves the problem.
@@ -108,11 +110,19 @@ function Display:draw()
     --love.graphics.setColor(0.5, 1, 0)
     --love.graphics.line(0, 10, 100, 75)
 
+    -- Apply motion blur.
+    love.graphics.setColor(1, 1, 1, self.motionBlurStrength)
+    love.graphics.draw(self.motionBlurCanvas)
+
     -- Draw the pixels onto the screen.
     love.graphics.setCanvas()
     love.graphics.setColor(1, 1, 1)
     local offset = self:getCanvasOffset()
     love.graphics.draw(self.canvas, offset.x, offset.y, 0, self:getScale())
+
+    -- Store the frame onto the motion blur buffer.
+    love.graphics.setCanvas(self.motionBlurCanvas)
+    love.graphics.draw(self.canvas)
 
     -- Clear the canvas and prepare it for the next frame.
     love.graphics.setCanvas(self.canvas)

@@ -16,8 +16,8 @@ local _VERSION = {love.getVersion()}
 -- Vars
 _Time = 0
 _MousePos = Vec2()
-_Game = nil
 _Display = nil
+_Game = nil
 
 
 
@@ -25,9 +25,9 @@ function love.load()
     if _VERSION[1] < 12 and false then
         _Game = BadVersionScreen()
     else
+        _Display = Display()
         _Game = Game()
 		_Game:init()
-        _Display = Display()
     end
 end
 

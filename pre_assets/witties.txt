@@ -5,9 +5,13 @@ Fun fact: I've created these stupid lines to display on your screen because this
 Challenge: Catch as many grammar errors as you can!
 Oh one one eight, nine nine nine. Eight eight one nine nine, nine one one nine, seven-two-five.            Three.
 Flowers on Mars? Naaah, they probably don't exist.
-Top 10 Facts You Never Knew About: Inserting a fork into an electrical outlet can be lethal!
-Top 10 Facts You Never Knew About: Snow is usually more common during winter and less abundant in summer.
+Top 10 Facts You Didn't Know About: Inserting a fork into an electrical outlet can be lethal!
+Top 10 Facts You Didn't Know About: Snow is usually more common during winter and less abundant in summer.
 death.fall.accident.water
 Connext? Chain Blast?
-love.graphics.draw(sprites.Sprite.frames[sprites.Sprite.currentFrame], sprites.Sprite.x, sprites.Sprite.y, sprites.Sprite.direction, sprites.Sprite.size, sprites.Sprite.size, sprites.Sprite.frames[sprites.Sprite.currentFrame]:getWidth, sprites.Sprite.frames[sprites.Sprite.currentFrame]:getHeight) @qu
-100% AI-generated content free!
+"love.graphics.draw(sprites.Sprite.frames[sprites.Sprite.currentFrame], sprites.Sprite.x, sprites.Sprite.y, sprites.Sprite.direction, sprites.Sprite.size, sprites.Sprite.size, sprites.Sprite.frames[sprites.Sprite.currentFrame]:getWidth, sprites.Sprite.frames[sprites.Sprite.currentFrame]:getHeight)" - @qu
+100% free of AI-generated content!
+Did you know: Every digital image is pixel art. Unless it's a vector image, but then it's still displayed as a pixel art.
+I hate that %1 of people who write percentages like this.
+This game will never contain microtransactions!
+The only limit is your imagination!

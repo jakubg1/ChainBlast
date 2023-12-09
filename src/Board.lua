@@ -173,13 +173,13 @@ end
 
 
 function Board:getTilePos(coords)
-    return coords * 15 + Vec2(44, -6)
+    return coords * 15 + Vec2(64, -14)
 end
 
 
 
 function Board:getTileCoords(pos)
-    return ((pos - Vec2(44, -6)) / 15):floor()
+    return ((pos - Vec2(64, -14)) / 15):floor()
 end
 
 

@@ -387,19 +387,19 @@ function Level:draw()
             alpha = math.min(7.5 - self.startAnimation, 1)
         end
         if _Game.lives == 1 then
-            _Display:drawText(string.format("Level %s", self.number), Vec2(101, 66), Vec2(0.5), nil, {0, 0, 0}, alpha * 0.5)
-            _Display:drawText(string.format("Level %s", self.number), Vec2(100, 65), Vec2(0.5), nil, nil, alpha)
+            _Display:drawText(string.format("Level %s", self.number), _Display.SIZE / 2 + Vec2(1, -9), Vec2(0.5), nil, {0, 0, 0}, alpha * 0.5)
+            _Display:drawText(string.format("Level %s", self.number), _Display.SIZE / 2 + Vec2(0, -10), Vec2(0.5), nil, nil, alpha)
             alpha = math.max(math.min(self.startAnimation - 1.5, 1))
             if self.startAnimation >= 6.5 then
                 alpha = math.min(7.5 - self.startAnimation, 1)
             end
-            _Display:drawText(string.format("This is your last chance!", self.number), Vec2(101, 76), Vec2(0.5), nil, {0, 0, 0}, alpha * 0.5)
-            _Display:drawText(string.format("This is your last chance!", self.number), Vec2(100, 75), Vec2(0.5), nil, {1, 0, 0}, alpha)
-            _Display:drawText(string.format("Don't screw up!", self.number), Vec2(101, 86), Vec2(0.5), nil, {0, 0, 0}, alpha * 0.5)
-            _Display:drawText(string.format("Don't screw up!", self.number), Vec2(100, 85), Vec2(0.5), nil, {1, 0, 0}, alpha)
+            _Display:drawText(string.format("This is your last chance!", self.number), _Display.SIZE / 2 + Vec2(1), Vec2(0.5), nil, {0, 0, 0}, alpha * 0.5)
+            _Display:drawText(string.format("This is your last chance!", self.number), _Display.SIZE / 2, Vec2(0.5), nil, {1, 0, 0}, alpha)
+            _Display:drawText(string.format("Don't screw up!", self.number), _Display.SIZE / 2 + Vec2(1, 11), Vec2(0.5), nil, {0, 0, 0}, alpha * 0.5)
+            _Display:drawText(string.format("Don't screw up!", self.number), _Display.SIZE / 2 + Vec2(0, 10), Vec2(0.5), nil, {1, 0, 0}, alpha)
         else
-            _Display:drawText(string.format("Level %s", self.number), Vec2(101, 76), Vec2(0.5), nil, {0, 0, 0}, alpha * 0.5)
-            _Display:drawText(string.format("Level %s", self.number), Vec2(100, 75), Vec2(0.5), nil, nil, alpha)
+            _Display:drawText(string.format("Level %s", self.number), _Display.SIZE / 2 + Vec2(1), Vec2(0.5), nil, {0, 0, 0}, alpha * 0.5)
+            _Display:drawText(string.format("Level %s", self.number), _Display.SIZE / 2, Vec2(0.5), nil, nil, alpha)
         end
     end
 

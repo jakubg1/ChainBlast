@@ -13,8 +13,9 @@ function Star:new(t)
     self.maxTime = 3 + love.math.random() * 7
     self.time = self.maxTime * t
 
-    self.startPos = Vec2(200, love.math.random() * 250 - 100)
-    self.endPos = Vec2(0, self.startPos.y + 100)
+    -- We start on the far left, and go down exactly half the window's width (1/2 slope).
+    self.startPos = Vec2(_Display.SIZE.x, love.math.random() * (_Display.SIZE.y + _Display.SIZE.x / 2) - _Display.SIZE.x / 2)
+    self.endPos = Vec2(0, self.startPos.y + _Display.SIZE.x / 2)
     self.pos = self.startPos * (1 - t) + self.endPos * t
 
     self.brightness = love.math.randomNormal(0.1, 0.4) + (10 - self.maxTime) * 0.1

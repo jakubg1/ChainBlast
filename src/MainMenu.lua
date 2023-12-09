@@ -97,9 +97,9 @@ function MainMenu:update(dt)
                 self.jokeTime = -10
             end
         end
-        if self.joke and self.jokeTime * 25 > _Display:getTextSize(self.joke).x + 200 then
+        if self.joke and self.jokeTime * 25 > _Display:getTextSize(self.joke).x + _Display.SIZE.x then
             self.joke = nil
-            self.jokeTime = -1
+            self.jokeTime = -10
         end
     end
 
@@ -120,11 +120,11 @@ function MainMenu:initScreen(screen)
     if screen == "main" then
         self.optionsHeader = "Main Menu"
         self.options = {"New Game", "Settings", "Credits", "Exit"}
-        self.optionsY = 60
+        self.optionsY = 50
     elseif screen == "difficulty" then
         self.optionsHeader = "Select Difficulty"
         self.options = {"Easy", "Challenging", "Hardcore", "Cancel"}
-        self.optionsY = 60
+        self.optionsY = 50
     elseif screen == "settings" then
         self.optionsHeader = "Settings"
         self.options = {
@@ -132,15 +132,15 @@ function MainMenu:initScreen(screen)
             "Music Volume: " .. self:getBars(_Game.settings.musicVolume),
             "Go Back"
         }
-        self.optionsY = 60
+        self.optionsY = 50
     elseif screen == "credits" then
         self.optionsHeader = nil
         self.options = {"Special Thanks", "Back to Menu"}
-        self.optionsY = 110
+        self.optionsY = 95
     elseif screen == "credits2" then
         self.optionsHeader = nil
         self.options = {"Credits", "Back to Menu"}
-        self.optionsY = 110
+        self.optionsY = 95
     elseif screen == "_game" then
         self.fadeOutTime = 0
         _Game.MUSIC.menu:stop(1)
@@ -180,28 +180,30 @@ end
 
 function MainMenu:draw()
     if self.fadeInTime and self.fadeInTime < 1.5 then
-        _Display:drawText("Chain", Vec2(95 - (1.5 - self.fadeInTime) * 300, 30), Vec2(1, 0.5), nil, {0, 1, 0}, nil, 2)
-        _Display:drawText("Blast", Vec2(105 + (1.5 - self.fadeInTime) * 300, 30), Vec2(0, 0.5), nil, {0, 1, 0}, nil, 2)
+        _Display:drawText("Chain", Vec2(_Display.SIZE.x / 2 - 5 - (1.5 - self.fadeInTime) * _Display.SIZE.x * 1.2, 20), Vec2(1, 0.5), nil, {0, 1, 0}, nil, 2)
+        _Display:drawText("Blast", Vec2(_Display.SIZE.x / 2 + 5 + (1.5 - self.fadeInTime) * _Display.SIZE.x * 1.2, 20), Vec2(0, 0.5), nil, {0, 1, 0}, nil, 2)
     else
         for i, star in ipairs(self.stars) do
             star:draw()
         end
 
-        _Display:drawText("Chain Blast", Vec2(100, 30), Vec2(0.5), nil, {0, 1, 0}, nil, 2)
-        _Display:drawText("v. alpha 0.2", Vec2(2, 150), Vec2(0, 1))
-        _Display:drawText("by jakubg1", Vec2(198, 150), Vec2(1, 1))
+        _Display:drawText("Chain Blast", Vec2(_Display.SIZE.x / 2, 20), Vec2(0.5), nil, {0, 1, 0}, nil, 2)
+        _Display:drawText("v. alpha 0.3", Vec2(2, 133), Vec2(0, 1), _Game.FONTS.small, {0.5, 0.5, 0.5})
+        _Display:drawText("game made by @jakubg1", Vec2(_Display.SIZE.x - 2, 133), Vec2(1, 1), _Game.FONTS.small, {0.5, 0.5, 0.5})
+
+        _Display:drawText("I didn't want to make the small font, but I was kinda forced to, eh?", Vec2(), Vec2(), _Game.FONTS.small)
 
         if self.fadeInTime then
-            _Display:drawRect(Vec2(), Vec2(200, 150), true, nil, 2.5 - self.fadeInTime)
+            _Display:drawRect(Vec2(), _Display.SIZE, true, nil, 2.5 - self.fadeInTime)
         end
     end
 
     if self.optionsHeader then
-        _Display:drawText(self.optionsHeader, Vec2(100, self.optionsY - 5), Vec2(0.5, 0))
+        _Display:drawText(self.optionsHeader, Vec2(_Display.SIZE.x / 2, self.optionsY - 5), Vec2(0.5, 0))
     end
     for i, option in ipairs(self.options) do
         local color = (i == self.selectedOption) and {1, 1, 1} or {0.8, 0.8, 0.8}
-        _Display:drawText(option, Vec2(100, self.optionsY + i * 10), Vec2(0.5, 0), nil, color)
+        _Display:drawText(option, Vec2(_Display.SIZE.x / 2, self.optionsY + i * 10), Vec2(0.5, 0), nil, color)
     end
 
     local xWidthPrev = 0
@@ -211,46 +213,40 @@ function MainMenu:draw()
         xWidthNext = _Display:getTextSize(self.options[math.ceil(self.cursorAnim)]).x * (self.cursorAnim % 1)
     end
     local xWidth = math.max((xWidthPrev + xWidthNext) / 2 - 20, 0)
-    local xSeparation = math.max(self.cursorAnimH * self.cursorAnimH * 320, xWidth)
+    local xSeparation = math.max(self.cursorAnimH * self.cursorAnimH * _Display.SIZE.x * 1.6, xWidth)
     local color = _GetRainbowColor(_Time / 4)
-    _Display:drawText(">", Vec2(70 + math.sin(_Time * math.pi) * 4 - xSeparation, self.optionsY + self.cursorAnim * 10 + 0.5), Vec2(1, 0), nil, color)
-    _Display:drawText("<", Vec2(130 - math.sin(_Time * math.pi) * 4 + xSeparation, self.optionsY + self.cursorAnim * 10 + 0.5), Vec2(0, 0), nil, color)
+    _Display:drawText(">", Vec2(90 + math.sin(_Time * math.pi) * 4 - xSeparation, self.optionsY + self.cursorAnim * 10 + 0.5), Vec2(1, 0), nil, color)
+    _Display:drawText("<", Vec2(150 - math.sin(_Time * math.pi) * 4 + xSeparation, self.optionsY + self.cursorAnim * 10 + 0.5), Vec2(0, 0), nil, color)
 
     if self.screen == "main" and self.joke then
-        _Display:drawText(self.joke, Vec2(200 - self.jokeTime * 25, 130), Vec2(0, 0.5), nil, {0.5, 0.5, 0.5})
+        _Display:drawText(self.joke, Vec2(_Display.SIZE.x - self.jokeTime * 25, 120), Vec2(0, 0.5), nil, {0.5, 0.5, 0.5})
     end
 
     if self.screen == "difficulty" then
         if self.selectedOption and self.selectedOption >= 1 and self.selectedOption <= 3 then
-            _Display:drawText(self.DIFFICULTY_STRS[self.selectedOption], Vec2(100, 130), Vec2(0.5))
+            _Display:drawText(self.DIFFICULTY_STRS[self.selectedOption], Vec2(_Display.SIZE.x / 2, 115), Vec2(0.5))
         end
     end
 
     if self.screen == "credits" then
-        _Display:drawText("Made with <3", Vec2(100, 45), Vec2(0.5))
-        _Display:drawText("For the LOVE Jam 2023!", Vec2(100, 55), Vec2(0.5))
-        _Display:drawText("Music by @Crisps", Vec2(100, 70), Vec2(0.5))
-        _Display:drawText("Copyright (C) 2023 jakubg1", Vec2(100, 80), Vec2(0.5))
-        _Display:drawText("All assets (besides music) and code", Vec2(100, 90), Vec2(0.5))
-        _Display:drawText("are licensed under MIT License.", Vec2(100, 100), Vec2(0.5))
-        _Display:drawText("More info in README.txt", Vec2(100, 110), Vec2(0.5))
+        _Display:drawText("Made with <3", Vec2(_Display.SIZE.x / 2, 35), Vec2(0.5))
+        _Display:drawText("For the LOVE Jam 2023!", Vec2(_Display.SIZE.x / 2, 45), Vec2(0.5))
+        _Display:drawText("Music by @Crisps", Vec2(_Display.SIZE.x / 2, 60), Vec2(0.5))
+        _Display:drawText("Copyright (C) 2023 jakubg1", Vec2(_Display.SIZE.x / 2, 70), Vec2(0.5))
+        _Display:drawText("All assets (besides music) and code", Vec2(_Display.SIZE.x / 2, 80), Vec2(0.5))
+        _Display:drawText("are licensed under MIT License.", Vec2(_Display.SIZE.x / 2, 90), Vec2(0.5))
+        _Display:drawText("More info in README.txt", Vec2(_Display.SIZE.x / 2, 100), Vec2(0.5))
     elseif self.screen == "credits2" then
-        _Display:drawText("Special Thanks", Vec2(100, 45), Vec2(0.5))
-        _Display:drawText("- MumboJumbo for making Chainz,", Vec2(100, 60), Vec2(0.5))
-        _Display:drawText("the game which I took inspiration from!", Vec2(100, 70), Vec2(0.5))
-        _Display:drawText("- @increpare for making BFXR!", Vec2(100, 85), Vec2(0.5))
-        _Display:drawText("- LOVE2D authors and community!", Vec2(100, 95), Vec2(0.5))
-        _Display:drawText("esp. @Aidan, @softmagic, @Maiori.iso & others", Vec2(100, 105), Vec2(0.5))
+        _Display:drawText("Special Thanks", Vec2(_Display.SIZE.x / 2, 35), Vec2(0.5))
+        _Display:drawText("- MumboJumbo for making Chainz,", Vec2(_Display.SIZE.x / 2, 50), Vec2(0.5))
+        _Display:drawText("the game which I took inspiration from!", Vec2(_Display.SIZE.x / 2, 60), Vec2(0.5))
+        _Display:drawText("- @increpare for making BFXR!", Vec2(_Display.SIZE.x / 2, 75), Vec2(0.5))
+        _Display:drawText("- LOVE2D authors and community!", Vec2(_Display.SIZE.x / 2, 85), Vec2(0.5))
+        _Display:drawText("esp. @Aidan, @softmagic, @Maiori.iso & others", Vec2(_Display.SIZE.x / 2, 95), Vec2(0.5))
     end
 
-    --local alpha = 0.5 + (_Time % 2) * 0.5
-    --if _Time % 2 > 1 then
-    --    alpha = 1 + (1 - _Time % 2) * 0.5
-    --end
-    --_Display:drawText("Click anywhere to start!", Vec2(100, 80), Vec2(0.5), nil, nil, alpha)
-
     if self.fadeOutTime then
-        _Display:drawRect(Vec2(), Vec2(200, 150), true, {0, 0, 0}, self.fadeOutTime)
+        _Display:drawRect(Vec2(), _Display.SIZE, true, {0, 0, 0}, self.fadeOutTime)
     end
 end
 

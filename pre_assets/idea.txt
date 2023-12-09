@@ -63,3 +63,17 @@ Ideas for special items:
 
 Another idea:
 - A bar which fills when matching over gold tiles; when filled, it will explode a few non-gold tiles or obstacles if any
+
+
+
+
+TIC Ideas
+- powerups (match 5 or more of a given color)
+    - red: bomb
+    - blue: lightning
+    - yellow: gold
+    - interaction with rainbow: combine effects or make a color bomb (2 rainbows/3 or more colors)
+    - extra time (+5? +10?) spawns every 20 chains
+- power replaced with manual shuffles (50 instead of 100 to refill)
+- arcade mode
+- how to play screen
