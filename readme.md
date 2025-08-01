@@ -2,7 +2,18 @@ This is a simple match-3 game, where instead of swapping two items together, you
 
 **The current state of the `master` branch is intended for development. For the demo as it is on Itch, check this commit: https://github.com/jakubg1/ChainBlast/commit/f9352ca4bd6da548d57bfc6db9d14e6d3d7b56d7**
 
+**Game's itch.io page:** https://jakubg1.itch.io/chain-blast-demo
+
+This game ranked **4th** in [LÖVE Game Jam 2023](https://itch.io/jam/love2d-jam-2023/rate/1946127)!
+
 Stay tuned for the full version! Yes, it's still coming!
+
+## Screenshots
+
+<img width="500" height="375" alt="obraz" src="https://github.com/user-attachments/assets/8c109be1-054c-4691-a712-c78ab76d2d5c" />
+<img width="500" height="375" alt="Image" src="https://github.com/user-attachments/assets/63b512d2-6e4d-45d9-a30d-7848670632e1" />
+
+(the game will look much better in the remake lol)
 
 ## Licensing and authors
 
@@ -18,7 +29,3 @@ Stay tuned for the full version! Yes, it's still coming!
         - Game over sound voiced by [**Crisps**](https://www.youtube.com/channel/UCSK9HoEVmgxcUUcGPliCyBg), too
         - All other sounds by **jakubg1** but actually generated using [BFXR](https://www.bfxr.net/) (MIT license)
     - Music by [**Crisps**](https://www.youtube.com/channel/UCSK9HoEVmgxcUUcGPliCyBg) (CC-BY-SA 2.0)
-
-- **Game's itch.io page:** https://jakubg1.itch.io/chain-blast-demo
-
-  This game ranked **4th** in [LÖVE Game Jam 2023](https://itch.io/jam/love2d-jam-2023/rate/1946127)!
