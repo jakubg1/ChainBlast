@@ -1,12 +1,13 @@
 This is a simple match-3 game, where instead of swapping two items together, you need to rotate chains to connect them into 3 or more links together!
 
-**The current state of the `master` branch is intended for development. For the demo as it is on Itch, check this commit: https://github.com/jakubg1/ChainBlast/commit/f9352ca4bd6da548d57bfc6db9d14e6d3d7b56d7**
+**For the demo as it is on Itch, check this commit: https://github.com/jakubg1/ChainBlast/commit/f9352ca4bd6da548d57bfc6db9d14e6d3d7b56d7**
+Later commits (and the current state of `master` branch) contain code. I might extract these commits at some point. right now im a bit too lazy lol
 
 **Game's itch.io page:** https://jakubg1.itch.io/chain-blast-demo
 
 This game ranked **4th** in [LÖVE Game Jam 2023](https://itch.io/jam/love2d-jam-2023/rate/1946127)!
 
-Stay tuned for the full version! Yes, it's still coming!
+Stay tuned for the full version! Yes, it's still coming! https://github.com/jakubg1/ChainBlastReborn
 
 ## Screenshots
 
